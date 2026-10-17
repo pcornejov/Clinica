@@ -17,6 +17,22 @@ medida para cada cliente. Desarrollo y mantención: una persona, en TypeScript.
 - Lo que cambia entre clínicas (marca, módulos activos, reglas) vive en
   `app/config/clinica.ts` y más adelante en la base de datos.
 
+## Decisiones tomadas tras la investigación
+
+Detalle en [INVESTIGACION.md](INVESTIGACION.md).
+
+| Tema | Decisión |
+|---|---|
+| Pago | El caso principal es **pagar en la clínica**. Caja registra el medio: efectivo, tarjeta, transferencia, bono Fonasa, bono Isapre o convenio, más el folio del bono. **Sin integración con IMED** en el prototipo. Webpay y Mercado Pago quedan como opción que cada clínica activa |
+| Formulario de reserva | Igual al de las clínicas grandes: **RUT primero (invitado)**, búsqueda por especialidad, por profesional o **Express** (primera hora disponible), y previsión opcional para filtrar médicos que atienden Fonasa |
+| Grupo familiar | **Sí, en la Fase 2.** Se reserva con el RUT del dependiente; los avisos van al tutor, que ve las citas de toda la familia |
+| Sobrecupo | **Sí.** Recepción puede agendar fuera de cupo; la restricción contra el cruce de citas no se aplica a sobrecupos |
+| Lista de espera | **Sí.** Si no hay horas, el paciente se inscribe; al liberarse una hora se avisa en orden de inscripción |
+| Sucursales | **No.** Una sola sede |
+| Tipos de atención | **Solo consultas presenciales.** Telemedicina, exámenes y procedimientos más adelante |
+| WhatsApp | Mensajes mínimos (fecha, hora, profesional), sin diagnósticos. Se guarda el consentimiento de contacto (Ley 21.719) |
+| Anular y reagendar | **Autoservicio** desde el link del correo o los botones de WhatsApp, sin llamar. Es el reclamo más repetido contra las clínicas grandes |
+
 ## Módulos
 
 | Módulo | Usuarios | Funciones |
@@ -65,14 +81,18 @@ contenido clínico.
 ## Reglas clave
 
 ### Agendamiento sin cuenta previa
-1. El paciente elige especialidad o médico, fecha y hora.
-2. Ingresa RUT (validado con dígito verificador), nombre, correo y teléfono.
-3. Elige el pago:
-   - **En la clínica:** la cita queda `agendada`.
+1. Ingresa el RUT del paciente (validado con dígito verificador).
+2. Busca por especialidad, por profesional o "Express" (primera hora
+   disponible), con previsión opcional. Elige fecha y hora.
+3. Completa nombre, correo y teléfono, o los del tutor si reserva para un
+   dependiente, y acepta recibir avisos.
+4. Elige el pago:
+   - **En la clínica** (caso principal): la cita queda `agendada`.
    - **Online:** la cita queda en `pendiente_pago` por 15 minutos; si no se
      paga, el cron la libera.
-4. Recibe la confirmación por correo y WhatsApp.
-5. Se crea su cuenta automáticamente; ingresa con un código enviado a su
+5. Recibe la confirmación por correo y WhatsApp, con link para anular o
+   reagendar.
+6. Se crea su cuenta automáticamente; ingresa con un código enviado a su
    correo o teléfono.
 
 **Seguridad:** ingresar un RUT nunca muestra datos de esa persona. Si el
@@ -112,8 +132,8 @@ contacto no coincide con el registrado, la cita se marca con
 |---|---|---|
 | 0. Base | Proyecto, esquema, migraciones, datos demo, autenticación con roles, web pública inicial | ✅ Lista |
 | 1. Administración | CRUD de especialidades, médicos, horarios, bloqueos y usuarios | Pendiente |
-| 2. Agendamiento | Disponibilidad, reserva sin cuenta, cuenta automática, mis citas, agenda de recepción | Pendiente |
-| 3. Pagos | Webpay, Mercado Pago, pago en clínica, reserva temporal, devoluciones | Pendiente |
+| 2. Agendamiento | Disponibilidad, reserva con RUT (invitado), búsqueda Express, grupo familiar, cuenta automática, mis citas, anular y reagendar, agenda de recepción, sobrecupo, lista de espera | Pendiente |
+| 3. Pagos | Registro de pagos en caja (bonos, efectivo, tarjeta), Webpay y Mercado Pago opcionales, reserva temporal, devoluciones | Pendiente |
 | 4. Notificaciones | Correo y WhatsApp con botones para confirmar o cancelar | Pendiente · ⭐ demo comercial mínima |
 | 5. Ficha clínica | Portal médico, antecedentes, atenciones, CIE-10, adjuntos (R2), auditoría | Pendiente · ⭐ demo completa |
 | 6. Bot de WhatsApp | Agendamiento por conversación | Pendiente |

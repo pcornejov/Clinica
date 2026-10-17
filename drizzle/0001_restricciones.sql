@@ -6,11 +6,12 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- Un médico no puede tener dos citas activas que se crucen en el tiempo.
 -- Es la protección definitiva contra el doble agendamiento: aunque dos
 -- personas reserven la misma hora al mismo tiempo, solo una lo logra.
+-- Los sobrecupos (agendados a propósito por recepción) quedan fuera.
 ALTER TABLE "citas" ADD CONSTRAINT "citas_sin_superposicion"
   EXCLUDE USING gist (
     "medico_id" WITH =,
     tstzrange("inicio", "fin", '[)') WITH &&
-  ) WHERE ("estado" NOT IN ('cancelada', 'no_asistio'));
+  ) WHERE ("estado" NOT IN ('cancelada', 'no_asistio') AND NOT "sobrecupo");
 --> statement-breakpoint
 
 ALTER TABLE "citas" ADD CONSTRAINT "citas_rango_valido" CHECK ("fin" > "inicio");
@@ -28,6 +29,10 @@ ALTER TABLE "horarios_medico" ADD CONSTRAINT "horarios_duracion_valida" CHECK ("
 ALTER TABLE "especialidades" ADD CONSTRAINT "especialidades_precio_valido" CHECK ("precio" >= 0);
 --> statement-breakpoint
 ALTER TABLE "pagos" ADD CONSTRAINT "pagos_monto_valido" CHECK ("monto" >= 0);
+--> statement-breakpoint
+ALTER TABLE "lista_espera" ADD CONSTRAINT "lista_espera_rango_valido" CHECK ("hasta" >= "desde");
+--> statement-breakpoint
+ALTER TABLE "pacientes" ADD CONSTRAINT "pacientes_tutor_distinto" CHECK ("tutor_id" <> "id");
 --> statement-breakpoint
 
 -- Una atención firmada no se puede modificar ni borrar (Ley 20.584):

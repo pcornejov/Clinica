@@ -1,5 +1,5 @@
 {
-  "id": "f2ad7c52-86c8-405b-8a8f-f3a58b0256b0",
+  "id": "3a8b2e6f-8916-4513-a324-c6a568744101",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -739,6 +739,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "sobrecupo": {
+          "name": "sobrecupo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "motivo_consulta": {
           "name": "motivo_consulta",
           "type": "text",
@@ -1283,6 +1290,159 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.lista_espera": {
+      "name": "lista_espera",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "paciente_id": {
+          "name": "paciente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "especialidad_id": {
+          "name": "especialidad_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medico_id": {
+          "name": "medico_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "desde": {
+          "name": "desde",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hasta": {
+          "name": "hasta",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_lista_espera",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'activa'"
+        },
+        "notificada_en": {
+          "name": "notificada_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cita_id": {
+          "name": "cita_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creado_en": {
+          "name": "creado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lista_espera_activa_idx": {
+          "name": "lista_espera_activa_idx",
+          "columns": [
+            {
+              "expression": "especialidad_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "creado_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"lista_espera\".\"estado\" = 'activa'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lista_espera_paciente_id_pacientes_id_fk": {
+          "name": "lista_espera_paciente_id_pacientes_id_fk",
+          "tableFrom": "lista_espera",
+          "tableTo": "pacientes",
+          "columnsFrom": [
+            "paciente_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "lista_espera_especialidad_id_especialidades_id_fk": {
+          "name": "lista_espera_especialidad_id_especialidades_id_fk",
+          "tableFrom": "lista_espera",
+          "tableTo": "especialidades",
+          "columnsFrom": [
+            "especialidad_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "lista_espera_medico_id_medicos_id_fk": {
+          "name": "lista_espera_medico_id_medicos_id_fk",
+          "tableFrom": "lista_espera",
+          "tableTo": "medicos",
+          "columnsFrom": [
+            "medico_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "lista_espera_cita_id_citas_id_fk": {
+          "name": "lista_espera_cita_id_citas_id_fk",
+          "tableFrom": "lista_espera",
+          "tableTo": "citas",
+          "columnsFrom": [
+            "cita_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.medico_especialidades": {
       "name": "medico_especialidades",
       "schema": "",
@@ -1401,6 +1561,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "atiende_fonasa": {
+          "name": "atiende_fonasa",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "foto_url": {
           "name": "foto_url",
@@ -1641,6 +1808,12 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "tutor_id": {
+          "name": "tutor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "user_id": {
           "name": "user_id",
           "type": "text",
@@ -1720,6 +1893,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "consentimiento_contacto_en": {
+          "name": "consentimiento_contacto_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "creado_en": {
           "name": "creado_en",
           "type": "timestamp with time zone",
@@ -1737,6 +1916,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "pacientes_tutor_id_pacientes_id_fk": {
+          "name": "pacientes_tutor_id_pacientes_id_fk",
+          "tableFrom": "pacientes",
+          "tableTo": "pacientes",
+          "columnsFrom": [
+            "tutor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "pacientes_user_id_user_id_fk": {
           "name": "pacientes_user_id_user_id_fk",
           "tableFrom": "pacientes",
@@ -1789,9 +1981,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "proveedor": {
-          "name": "proveedor",
-          "type": "proveedor_pago",
+        "medio": {
+          "name": "medio",
+          "type": "medio_pago",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -1812,6 +2004,12 @@
         },
         "referencia_externa": {
           "name": "referencia_externa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registrado_por": {
+          "name": "registrado_por",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1857,7 +2055,7 @@
           "name": "pagos_referencia_idx",
           "columns": [
             {
-              "expression": "proveedor",
+              "expression": "medio",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1887,6 +2085,19 @@
             "id"
           ],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "pagos_registrado_por_user_id_fk": {
+          "name": "pagos_registrado_por_user_id_fk",
+          "tableFrom": "pagos",
+          "tableTo": "user",
+          "columnsFrom": [
+            "registrado_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -2177,6 +2388,16 @@
         "cancelada"
       ]
     },
+    "public.estado_lista_espera": {
+      "name": "estado_lista_espera",
+      "schema": "public",
+      "values": [
+        "activa",
+        "notificada",
+        "agendada",
+        "cancelada"
+      ]
+    },
     "public.estado_notificacion": {
       "name": "estado_notificacion",
       "schema": "public",
@@ -2197,6 +2418,20 @@
         "reembolsado"
       ]
     },
+    "public.medio_pago": {
+      "name": "medio_pago",
+      "schema": "public",
+      "values": [
+        "webpay",
+        "mercadopago",
+        "efectivo",
+        "tarjeta",
+        "transferencia",
+        "bono_fonasa",
+        "bono_isapre",
+        "convenio"
+      ]
+    },
     "public.modalidad_pago": {
       "name": "modalidad_pago",
       "schema": "public",
@@ -2213,15 +2448,6 @@
         "isapre",
         "particular",
         "otra"
-      ]
-    },
-    "public.proveedor_pago": {
-      "name": "proveedor_pago",
-      "schema": "public",
-      "values": [
-        "webpay",
-        "mercadopago",
-        "clinica"
       ]
     },
     "public.rol_usuario": {
@@ -2250,7 +2476,8 @@
         "recordatorio_24h",
         "recordatorio_2h",
         "cancelacion",
-        "reagendamiento"
+        "reagendamiento",
+        "lista_espera"
       ]
     }
   },

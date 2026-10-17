@@ -5,7 +5,7 @@
  * Uso: npm run db:seed   (lee DATABASE_URL desde .dev.vars o .env)
  */
 import { config } from "dotenv";
-import { count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { crearDb } from "../app/db/client";
 import * as s from "../app/db/schema";
 import { aInstante, diaSemanaLocal, fechaLocal, sumarDias } from "../app/lib/fechas";
@@ -178,6 +178,7 @@ async function main() {
           email,
           telefono: `+569${Math.floor(10_000_000 + azar() * 89_999_999)}`,
           registroSis: String(100_000 + Math.floor(azar() * 800_000)),
+          atiendeFonasa: azar() < 0.7,
           biografia: `Profesional de ${slugs.map((x) => espPorSlug.get(x)!.nombre.toLowerCase()).join(" y ")} con más de ${5 + Math.floor(azar() * 15)} años de experiencia.`,
         })
         .returning();
@@ -222,11 +223,18 @@ async function main() {
           email: i === 0 ? `paciente@${DOMINIO}` : email,
           telefono: `+569${Math.floor(10_000_000 + azar() * 89_999_999)}`,
           prevision,
+          consentimientoContactoEn: new Date(),
           isapre: prevision === "isapre" ? elegir(["Colmena", "Cruz Blanca", "Banmédica", "Consalud"]) : null,
         })
         .returning();
       pacientes.push(p);
     }
+
+    // La paciente demo (con cuenta) tiene a su hija como carga familiar.
+    await db
+      .update(s.pacientes)
+      .set({ tutorId: pacientes[0].id, apellidos: "González Cortés" })
+      .where(eq(s.pacientes.id, pacientes[8].id));
 
     // Fichas clínicas
     const fichas = await db
@@ -309,7 +317,14 @@ async function main() {
           if (cita.modalidadPago === "online" || estado === "atendida") {
             await db.insert(s.pagos).values({
               citaId: cita.id,
-              proveedor: cita.modalidadPago === "online" ? elegir(["webpay", "mercadopago"] as const) : "clinica",
+              medio:
+                cita.modalidadPago === "online"
+                  ? elegir(["webpay", "mercadopago"] as const)
+                  : paciente.prevision === "fonasa"
+                    ? "bono_fonasa"
+                    : paciente.prevision === "isapre"
+                      ? "bono_isapre"
+                      : elegir(["efectivo", "tarjeta"] as const),
               estado: "pagado",
               monto: precio,
               referenciaExterna: `demo-${cita.id.slice(0, 8)}`,

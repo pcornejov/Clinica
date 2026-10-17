@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   bigserial,
   boolean,
   date,
@@ -125,6 +126,8 @@ export const medicos = pgTable("medicos", {
   /** N° de registro en la Superintendencia de Salud. */
   registroSis: text("registro_sis"),
   biografia: text("biografia"),
+  /** Si atiende con bono Fonasa (Modalidad Libre Elección). */
+  atiendeFonasa: boolean("atiende_fonasa").notNull().default(true),
   fotoUrl: text("foto_url"),
   activo: boolean("activo").notNull().default(true),
   creadoEn: creadoEn(),
@@ -186,6 +189,14 @@ export const prevision = pgEnum("prevision", ["fonasa", "isapre", "particular", 
 
 export const pacientes = pgTable("pacientes", {
   id: id(),
+  /**
+   * Responsable de un paciente dependiente (hijo/a u otra carga familiar).
+   * Las citas del dependiente se gestionan desde la cuenta del tutor y los
+   * avisos van a su correo y teléfono.
+   */
+  tutorId: uuid("tutor_id").references((): AnyPgColumn => pacientes.id, {
+    onDelete: "set null",
+  }),
   userId: text("user_id")
     .unique()
     .references(() => user.id, { onDelete: "set null" }),
@@ -201,6 +212,8 @@ export const pacientes = pgTable("pacientes", {
   direccion: text("direccion"),
   contactoEmergenciaNombre: text("contacto_emergencia_nombre"),
   contactoEmergenciaTelefono: text("contacto_emergencia_telefono"),
+  /** Cuándo aceptó recibir avisos por correo y WhatsApp (Ley 21.719). */
+  consentimientoContactoEn: timestamp("consentimiento_contacto_en", { withTimezone: true }),
   creadoEn: creadoEn(),
   actualizadoEn: actualizadoEn(),
 });
@@ -236,6 +249,8 @@ export const citas = pgTable(
     modalidadPago: modalidadPago("modalidad_pago").notNull().default("clinica"),
     /** Precio en CLP al momento de agendar. */
     precio: integer("precio").notNull(),
+    /** Agendada por recepción fuera de los cupos normales. */
+    sobrecupo: boolean("sobrecupo").notNull().default(false),
     motivoConsulta: text("motivo_consulta"),
     /** Marcada cuando los datos de contacto no coinciden con los registrados. */
     requiereRevision: boolean("requiere_revision").notNull().default(false),
@@ -246,7 +261,7 @@ export const citas = pgTable(
     creadoEn: creadoEn(),
     actualizadoEn: actualizadoEn(),
     // La restricción que impide citas superpuestas para un mismo médico
-    // (EXCLUDE USING gist) está en drizzle/0001_restricciones.sql.
+    // (EXCLUDE USING gist, salvo sobrecupos) está en drizzle/0001_restricciones.sql.
   },
   (t) => [
     index("citas_medico_inicio_idx").on(t.medicoId, t.inicio),
@@ -257,7 +272,17 @@ export const citas = pgTable(
   ],
 );
 
-export const proveedorPago = pgEnum("proveedor_pago", ["webpay", "mercadopago", "clinica"]);
+/** Online (webpay, mercadopago) o registrado en la caja de la clínica. */
+export const medioPago = pgEnum("medio_pago", [
+  "webpay",
+  "mercadopago",
+  "efectivo",
+  "tarjeta",
+  "transferencia",
+  "bono_fonasa",
+  "bono_isapre",
+  "convenio",
+]);
 export const estadoPago = pgEnum("estado_pago", [
   "pendiente",
   "pagado",
@@ -273,18 +298,55 @@ export const pagos = pgTable(
     citaId: uuid("cita_id")
       .notNull()
       .references(() => citas.id, { onDelete: "restrict" }),
-    proveedor: proveedorPago("proveedor").notNull(),
+    medio: medioPago("medio").notNull(),
     estado: estadoPago("estado").notNull().default("pendiente"),
     monto: integer("monto").notNull(),
-    /** Token / id de la transacción en Transbank o Mercado Pago. */
+    /** Token de Transbank / id de Mercado Pago, o folio del bono Fonasa/Isapre. */
     referenciaExterna: text("referencia_externa"),
+    /** Usuario de caja que registró el pago presencial. */
+    registradoPor: text("registrado_por").references(() => user.id),
     detalle: jsonb("detalle"),
     creadoEn: creadoEn(),
     actualizadoEn: actualizadoEn(),
   },
   (t) => [
     index("pagos_cita_idx").on(t.citaId),
-    uniqueIndex("pagos_referencia_idx").on(t.proveedor, t.referenciaExterna),
+    uniqueIndex("pagos_referencia_idx").on(t.medio, t.referenciaExterna),
+  ],
+);
+
+export const estadoListaEspera = pgEnum("estado_lista_espera", [
+  "activa",
+  "notificada",
+  "agendada",
+  "cancelada",
+]);
+
+/** Pacientes esperando que se libere una hora en una especialidad o con un médico. */
+export const listaEspera = pgTable(
+  "lista_espera",
+  {
+    id: id(),
+    pacienteId: uuid("paciente_id")
+      .notNull()
+      .references(() => pacientes.id, { onDelete: "cascade" }),
+    especialidadId: uuid("especialidad_id")
+      .notNull()
+      .references(() => especialidades.id, { onDelete: "cascade" }),
+    /** Opcional: solo con este médico. */
+    medicoId: uuid("medico_id").references(() => medicos.id, { onDelete: "cascade" }),
+    /** Rango de fechas en que le sirve una hora. */
+    desde: date("desde").notNull(),
+    hasta: date("hasta").notNull(),
+    estado: estadoListaEspera("estado").notNull().default("activa"),
+    notificadaEn: timestamp("notificada_en", { withTimezone: true }),
+    citaId: uuid("cita_id").references(() => citas.id, { onDelete: "set null" }),
+    creadoEn: creadoEn(),
+  },
+  (t) => [
+    index("lista_espera_activa_idx")
+      .on(t.especialidadId, t.creadoEn)
+      .where(sql`${t.estado} = 'activa'`),
   ],
 );
 
@@ -295,6 +357,7 @@ export const tipoNotificacion = pgEnum("tipo_notificacion", [
   "recordatorio_2h",
   "cancelacion",
   "reagendamiento",
+  "lista_espera",
 ]);
 export const estadoNotificacion = pgEnum("estado_notificacion", [
   "pendiente",
