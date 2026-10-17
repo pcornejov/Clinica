@@ -327,6 +327,7 @@ async function main() {
                       : elegir(["efectivo", "tarjeta"] as const),
               estado: "pagado",
               monto: precio,
+              pagadoEn: cita.modalidadPago === "online" ? new Date(inicio.getTime() - 2 * 86_400_000) : inicio,
               referenciaExterna: `demo-${cita.id.slice(0, 8)}`,
             });
           }

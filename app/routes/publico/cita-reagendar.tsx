@@ -4,9 +4,10 @@ import { z } from "zod";
 import { Aviso } from "~/components/formulario";
 import { clinica } from "~/config/clinica";
 import { citas, especialidades, medicos } from "~/db/schema";
-import { contextoApp } from "~/lib/contexto";
+import { contextoApp, enSegundoPlano } from "~/lib/contexto";
 import { fechaLocal, formatearFechaHora } from "~/lib/fechas";
 import { verificarTokenGestion } from "~/lib/token-gestion.server";
+import { procesarCola } from "~/modules/avisos/cola.server";
 import { buscarCupos, reagendarCita } from "~/modules/citas.server";
 import type { Route } from "./+types/cita-reagendar";
 
@@ -51,6 +52,8 @@ export async function action(args: Route.ActionArgs) {
   const { db, cita, nuevoInicio } = await cargar(args);
   const resultado = await reagendarCita(db, cita.id, nuevoInicio);
   if ("error" in resultado) return data({ error: resultado.error }, { status: 409 });
+  const app = args.context.get(contextoApp);
+  enSegundoPlano(app, procesarCola(app.db, app.env));
   return redirect(`/cita/${args.params.token}?reagendada=1`);
 }
 

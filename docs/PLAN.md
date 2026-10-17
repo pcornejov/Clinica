@@ -65,11 +65,11 @@ contenido clínico.
 
 ### Notas técnicas
 
-- **Sin transacciones con Neon por HTTP.** Los pasos que deben ser atómicos
-  (p. ej. crear el usuario de un médico junto con su ficha) se resuelven hoy
-  deshaciendo manualmente el paso previo si algo falla. Para la Fase 3 (pagos),
-  donde la atomicidad importa más, conviene pasar al driver WebSocket de Neon
-  (`drizzle-orm/neon-serverless`), que sí soporta transacciones.
+- **Sin transacciones con Neon por HTTP.** Los pasos que deben ser atómicos se
+  resuelven con actualizaciones condicionales (`WHERE estado = …`) que hacen
+  cada paso seguro ante repeticiones y carreras: el pago se "toma" antes de
+  confirmarlo, los avisos se toman con `FOR UPDATE SKIP LOCKED`, y la cita solo
+  pasa de "pendiente de pago" a "agendada" una vez. No hizo falta cambiar de driver.
 - **Permisos:** los mantenedores son solo para `admin`; recepción ve la agenda,
   la lista de espera y el resumen.
 - **Link de gestión de la cita:** `/cita/<id>.<firma>`, con firma HMAC del id
@@ -78,6 +78,9 @@ contenido clínico.
 - **Código de ingreso de pacientes:** mientras no se envíen correos (Fase 4),
   se muestra en pantalla si `MOSTRAR_CODIGOS_DEMO` es `"true"` (en
   `wrangler.jsonc`). **Debe quedar en `"false"` con pacientes reales.**
+- **Integraciones:** ver [INTEGRACIONES.md](INTEGRACIONES.md). Sin credenciales,
+  Webpay, correo y WhatsApp funcionan en modo simulado y todo queda visible en
+  Panel → Avisos.
 - **Pendiente antes de producción:** proteger los formularios públicos contra
   bots (Cloudflare Turnstile, gratis) y limitar reservas por RUT/IP.
 
@@ -151,8 +154,8 @@ contacto no coincide con el registrado, la cita se marca con
 | 0. Base | Proyecto, esquema, migraciones, datos demo, autenticación con roles, web pública inicial | ✅ Lista |
 | 1. Administración | Mantenedores de especialidades, médicos (datos, especialidades, horarios semanales, bloqueos de agenda, activar/desactivar) y usuarios del personal. Cada cambio queda en la auditoría | ✅ Lista |
 | 2. Agendamiento | Disponibilidad, reserva con RUT (invitado), búsqueda por especialidad, profesional o Express, filtro Fonasa, grupo familiar, cuenta automática con ingreso por código, mis citas, link firmado para anular y reagendar, agenda diaria de recepción con sobrecupo, lista de espera con aviso automático | ✅ Lista |
-| 3. Pagos | Registro de pagos en caja (bonos, efectivo, tarjeta), Webpay y Mercado Pago opcionales, reserva temporal, devoluciones | Pendiente |
-| 4. Notificaciones | Correo y WhatsApp con botones para confirmar o cancelar | Pendiente · ⭐ demo comercial mínima |
+| 3. Pagos | Cobro en caja (bono Fonasa/Isapre con folio, efectivo, tarjeta, transferencia, convenio), caja del día, Webpay Plus (integración, producción o simulado) con reserva temporal de 15 min, retorno idempotente, devolución según regla de 24 h | ✅ Lista |
+| 4. Notificaciones | Confirmación, recordatorio 24 h, cambio, anulación y hora liberada por correo (Resend) y WhatsApp (Meta), con botones Confirmar/Anular; cola con reintentos sin duplicados; panel de avisos; modo simulado sin credenciales | ✅ Lista · ⭐ demo comercial mínima |
 | 5. Ficha clínica | Portal médico, antecedentes, atenciones, CIE-10, adjuntos (R2), auditoría | Pendiente · ⭐ demo completa |
 | 6. Bot de WhatsApp | Agendamiento por conversación | Pendiente |
 | 7. Personalización | Marca, módulos y reglas configurables desde el panel | Pendiente |

@@ -11,8 +11,16 @@
     "APP_URL": "http://localhost:5173",
     // Muestra en pantalla el código de ingreso de pacientes mientras no se
     // envían correos (Fase 4). Poner en "false" antes de usarlo con pacientes reales.
-    "MOSTRAR_CODIGOS_DEMO": "true"
+    "MOSTRAR_CODIGOS_DEMO": "true",
+    // Webpay: "integracion" (pruebas de Transbank), "produccion" o "simulado"
+    // (pantalla propia que imita Webpay, sin contactar a Transbank).
+    "TRANSBANK_MODO": "integracion"
   }
-  // Secretos (no van aquí): DATABASE_URL, BETTER_AUTH_SECRET.
-  // Local: archivo .dev.vars. Producción: `npx wrangler secret put <NOMBRE>`.
+  // Secretos (no van aquí). Local: archivo .dev.vars. Producción:
+  // `npx wrangler secret put <NOMBRE>`.
+  // - Obligatorios: DATABASE_URL, BETTER_AUTH_SECRET.
+  // - Correo (opcional, sin ellos se simula): RESEND_API_KEY, EMAIL_REMITENTE.
+  // - WhatsApp (opcional, sin ellos se simula): WHATSAPP_TOKEN,
+  //   WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_VERIFY_TOKEN, WHATSAPP_APP_SECRET.
+  // - Webpay producción: TRANSBANK_CODIGO_COMERCIO, TRANSBANK_LLAVE.
 }

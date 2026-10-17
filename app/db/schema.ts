@@ -305,12 +305,15 @@ export const pagos = pgTable(
     referenciaExterna: text("referencia_externa"),
     /** Usuario de caja que registró el pago presencial. */
     registradoPor: text("registrado_por").references(() => user.id),
-    detalle: jsonb("detalle"),
+    /** Folio del bono, últimos dígitos de la tarjeta, código de autorización, etc. */
+    detalle: jsonb("detalle").$type<Record<string, unknown>>(),
+    pagadoEn: timestamp("pagado_en", { withTimezone: true }),
     creadoEn: creadoEn(),
     actualizadoEn: actualizadoEn(),
   },
   (t) => [
     index("pagos_cita_idx").on(t.citaId),
+    index("pagos_pagado_en_idx").on(t.pagadoEn),
     uniqueIndex("pagos_referencia_idx").on(t.medio, t.referenciaExterna),
   ],
 );
@@ -361,8 +364,10 @@ export const tipoNotificacion = pgEnum("tipo_notificacion", [
 ]);
 export const estadoNotificacion = pgEnum("estado_notificacion", [
   "pendiente",
+  "procesando",
   "enviada",
   "fallida",
+  "omitida",
 ]);
 
 export const notificaciones = pgTable(
@@ -379,7 +384,14 @@ export const notificaciones = pgTable(
     programadaPara: timestamp("programada_para", { withTimezone: true }).notNull(),
     enviadaEn: timestamp("enviada_en", { withTimezone: true }),
     intentos: smallint("intentos").notNull().default(0),
+    /** Cuándo la tomó un proceso de envío (evita envíos duplicados). */
+    bloqueadaEn: timestamp("bloqueada_en", { withTimezone: true }),
+    /** Correo o teléfono al que se envió, y el contenido, para revisarlo en el panel. */
+    destino: text("destino"),
+    asunto: text("asunto"),
+    cuerpo: text("cuerpo"),
     error: text("error"),
+    /** Id del mensaje en Resend / WhatsApp, o "simulado". */
     idExterno: text("id_externo"),
     creadoEn: creadoEn(),
   },

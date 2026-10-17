@@ -1,7 +1,9 @@
 import { createRequestHandler, RouterContextProvider } from "react-router";
 import { crearDb } from "../app/db/client";
 import { crearAuth } from "../app/lib/auth.server";
-import { contextoApp } from "../app/lib/contexto";
+import { contextoApp, type ContextoApp } from "../app/lib/contexto";
+import { procesarCola } from "../app/modules/avisos/cola.server";
+import { liberarReservasVencidas } from "../app/modules/pagos.server";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -13,17 +15,29 @@ export default {
     const { db, cerrar } = crearDb(env.DATABASE_URL);
     const context = new RouterContextProvider();
     const buzonDemo = {};
-    context.set(contextoApp, { env, ctx, db, auth: crearAuth(env, db, buzonDemo), buzonDemo });
+    const app: ContextoApp = { env, ctx, db, auth: crearAuth(env, db, buzonDemo), buzonDemo, tareas: [] };
+    context.set(contextoApp, app);
     try {
       return await requestHandler(request, context);
     } finally {
-      ctx.waitUntil(cerrar());
+      // La conexión se cierra cuando terminan las tareas en segundo plano.
+      ctx.waitUntil(Promise.allSettled(app.tareas).then(cerrar));
     }
   },
 
-  async scheduled(controller, _env, _ctx) {
-    // Fase 3: liberar reservas con pago vencido.
-    // Fase 4: enviar recordatorios pendientes por correo y WhatsApp.
-    console.log(`cron ${controller.cron} ejecutado`);
+  // Cada 5 minutos: libera horas no pagadas y envía avisos pendientes (recordatorios).
+  async scheduled(controller, env, ctx) {
+    const { db, cerrar } = crearDb(env.DATABASE_URL);
+    const tarea = (async () => {
+      try {
+        const liberadas = await liberarReservasVencidas(db);
+        const avisos = await procesarCola(db, env);
+        console.log(`cron ${controller.cron}: ${liberadas} reservas liberadas, avisos`, avisos);
+      } finally {
+        await cerrar();
+      }
+    })();
+    ctx.waitUntil(tarea);
+    await tarea;
   },
 } satisfies ExportedHandler<Env>;

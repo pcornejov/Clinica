@@ -13,6 +13,12 @@ export default [
     route("cita/:token/reagendar", "routes/publico/cita-reagendar.tsx"),
   ]),
 
+  // Pago online (Webpay) y webhooks
+  route("pago/webpay/ir", "routes/pago/ir.tsx"),
+  route("pago/webpay/retorno", "routes/pago/retorno.tsx"),
+  route("pago/simulador", "routes/pago/simulador.tsx"),
+  route("api/whatsapp", "routes/api.whatsapp.ts"),
+
   // Sesión
   route("ingresar", "routes/ingresar.tsx"),
   route("ingresar/paciente", "routes/ingresar-paciente.tsx"),
@@ -25,6 +31,8 @@ export default [
       index("routes/admin/inicio.tsx"),
       route("agenda", "routes/admin/agenda.tsx"),
       route("lista-espera", "routes/admin/lista-espera.tsx"),
+      route("caja", "routes/admin/caja.tsx"),
+      route("avisos", "routes/admin/avisos.tsx"),
       route("especialidades", "routes/admin/especialidades.tsx"),
       route("medicos", "routes/admin/medicos.tsx"),
       route("medicos/nuevo", "routes/admin/medico-nuevo.tsx"),

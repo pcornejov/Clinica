@@ -5,14 +5,16 @@ import { z } from "zod";
 import { Aviso, Campo, CampoSelect, CampoTexto } from "~/components/formulario";
 import { clinica } from "~/config/clinica";
 import { especialidades, medicos, pacientes } from "~/db/schema";
-import { contextoApp } from "~/lib/contexto";
+import { contextoApp, enSegundoPlano } from "~/lib/contexto";
 import { fechaLocal, formatearFechaHora, formatearPesos } from "~/lib/fechas";
 import { validar, type Errores } from "~/lib/formularios";
 import { formatearRut, normalizarRut, validarRut } from "~/lib/rut";
 import { obtenerUsuario } from "~/lib/sesion.server";
 import { normalizarTelefono } from "~/lib/telefono";
 import { crearTokenGestion } from "~/lib/token-gestion.server";
-import { buscarCupos, crearCita } from "~/modules/citas.server";
+import { procesarCola } from "~/modules/avisos/cola.server";
+import { anularCita, buscarCupos, crearCita } from "~/modules/citas.server";
+import { iniciarPagoWebpay } from "~/modules/pagos.server";
 import { asegurarCuentaPaciente, obtenerOCrearPaciente } from "~/modules/pacientes.server";
 import type { Route } from "./+types/agendar-confirmar";
 
@@ -73,6 +75,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     },
     volver: `/agendar?especialidad=${especialidad.id}`,
     prellenado,
+    pagoOnline: clinica.modulos.pagoOnline,
+    minutosParaPagar: clinica.reglas.reservaPagoMinutos,
   };
 }
 
@@ -101,6 +105,7 @@ const esquemaComun = {
   fechaNacimiento,
   motivo: z.string().trim().max(300).optional().transform((v) => v || null),
   consentimiento: z.literal("on", "Debes aceptar para recibir la confirmación y recordatorios"),
+  pago: z.enum(["clinica", "webpay"]).default("clinica"),
 };
 
 const esquema = z.discriminatedUnion("para", [
@@ -122,7 +127,8 @@ const esquema = z.discriminatedUnion("para", [
 ]);
 
 export async function action({ request, context }: Route.ActionArgs) {
-  const { db, env } = context.get(contextoApp);
+  const app = context.get(contextoApp);
+  const { db, env } = app;
   const url = new URL(request.url);
   const { medico, especialidad, inicio } = await cargarHora(db, url);
 
@@ -169,18 +175,31 @@ export async function action({ request, context }: Route.ActionArgs) {
     canal: "web",
     motivoConsulta: d.motivo,
     requiereRevision,
+    pagoOnline: d.pago === "webpay",
   });
   if ("error" in resultado) return data({ errores: {} as Errores, error: resultado.error }, { status: 409 });
-
   await asegurarCuentaPaciente(db, titular);
+
+  if (d.pago === "webpay") {
+    const pago = await iniciarPagoWebpay({ db, env }, resultado.citaId, url.origin);
+    if ("error" in pago) {
+      await anularCita(db, resultado.citaId, "No se pudo iniciar el pago");
+      return data({ errores: {} as Errores, error: pago.error }, { status: 502 });
+    }
+    return redirect(`/pago/webpay/ir?${new URLSearchParams({ token: pago.token })}`);
+  }
+
+  // La confirmación sale de inmediato, sin hacer esperar al paciente.
+  enSegundoPlano(app, procesarCola(db, env));
   const token = await crearTokenGestion(resultado.citaId, env.BETTER_AUTH_SECRET);
   return redirect(`/cita/${token}?nueva=1`);
 }
 
 export default function Confirmar({ loaderData, actionData }: Route.ComponentProps) {
-  const { hora, volver, prellenado } = loaderData;
+  const { hora, volver, prellenado, pagoOnline, minutosParaPagar } = loaderData;
   const errores = actionData?.errores ?? {};
   const [para, setPara] = useState<"mi" | "otro">("mi");
+  const [pago, setPago] = useState<"clinica" | "webpay">("clinica");
   const enviando = useNavigation().state === "submitting";
 
   if (!hora.disponible && !actionData) {
@@ -201,7 +220,7 @@ export default function Confirmar({ loaderData, actionData }: Route.ComponentPro
       <div className="mt-6 rounded-2xl border border-marca-100 bg-marca-50 p-5">
         <p className="text-lg font-semibold text-slate-900">{formatearFechaHora(new Date(hora.inicio))}</p>
         <p className="mt-1 text-slate-700">{hora.especialidad} · {hora.medico}</p>
-        <p className="mt-1 text-sm text-slate-600">{formatearPesos(hora.precio)} · se paga en la clínica el día de la atención</p>
+        <p className="mt-1 text-sm text-slate-600">Valor de la consulta: {formatearPesos(hora.precio)}</p>
       </div>
 
       <Form method="post" className="mt-6 space-y-6">
@@ -266,10 +285,27 @@ export default function Confirmar({ loaderData, actionData }: Route.ComponentPro
           {errores.consentimiento && <p className="text-xs text-rose-600">{errores.consentimiento}</p>}
         </section>
 
+        <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+          <legend className="px-1 text-sm font-medium text-slate-700">¿Cómo quieres pagar?</legend>
+          {([
+            ["clinica", "En la clínica", "El día de tu atención: efectivo, tarjeta o bono Fonasa/Isapre."],
+            ...(pagoOnline ? [["webpay", "Ahora con Webpay", "Tarjeta de débito o crédito. Si anulas con más de 24 horas de anticipación, te devolvemos el pago."]] : []),
+          ] as [string, string, string][]).map(([valor, titulo, detalle]) => (
+            <label key={valor} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm ${pago === valor ? "border-marca-500 bg-marca-50" : "border-slate-200"}`}>
+              <input type="radio" name="pago" value={valor} checked={pago === valor} onChange={() => setPago(valor as "clinica" | "webpay")} className="mt-0.5 accent-marca-600" />
+              <span>
+                <span className="font-medium text-slate-900">{titulo}</span>
+                <span className="block text-slate-500">{detalle}</span>
+              </span>
+            </label>
+          ))}
+          {pago === "webpay" && <p className="text-xs text-slate-500">Retenemos la hora por {minutosParaPagar} minutos mientras completas el pago.</p>}
+        </fieldset>
+
         {actionData?.error && <Aviso tipo="error">{actionData.error} <Link to={volver} className="underline">Ver otras horas</Link></Aviso>}
 
         <button disabled={enviando} className="w-full rounded-lg bg-marca-600 px-5 py-3 font-medium text-white hover:bg-marca-700 disabled:opacity-60">
-          {enviando ? "Reservando…" : "Confirmar reserva"}
+          {enviando ? "Reservando…" : pago === "webpay" ? `Ir a pagar ${formatearPesos(hora.precio)} con Webpay` : "Confirmar reserva"}
         </button>
       </Form>
     </div>

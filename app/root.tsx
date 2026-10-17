@@ -47,7 +47,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   if (isRouteErrorResponse(error)) {
     titulo = error.status === 404 ? "Página no encontrada" : `Error ${error.status}`;
-    detalle = error.status === 404 ? "La página que buscas no existe." : error.statusText || detalle;
+    // Si la ruta dio un motivo (p. ej. "Enlace no válido"), se muestra ese.
+    const motivo = typeof error.data === "string" && error.data.length < 200 ? error.data : null;
+    detalle = motivo ?? (error.status === 404 ? "La página que buscas no existe." : error.statusText || detalle);
   } else if (import.meta.env.DEV && error instanceof Error) {
     detalle = error.message;
     stack = error.stack;

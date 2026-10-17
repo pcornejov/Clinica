@@ -15,6 +15,8 @@ export default function LayoutAdmin({ loaderData }: Route.ComponentProps) {
     { a: "/admin", texto: "Resumen" },
     { a: "/admin/agenda", texto: "Agenda" },
     { a: "/admin/lista-espera", texto: "Lista de espera" },
+    { a: "/admin/caja", texto: "Caja" },
+    { a: "/admin/avisos", texto: "Avisos" },
   ];
   if (usuario.role === "admin") {
     enlaces.push(

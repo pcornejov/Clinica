@@ -33,6 +33,11 @@ Contraseña de todos: `Demo1234!`
 | `camila.rojas@example.com` | Médico (los demás: `nombre.apellido@example.com`) |
 | `paciente@example.com` | Paciente (también puede ingresar en `/ingresar/paciente` con código) |
 
+## Pagos y avisos
+
+Webpay, correo y WhatsApp funcionan sin configuración (modo simulado) y se
+activan con sus credenciales. Ver [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md).
+
 ## Comandos
 
 | Comando | Qué hace |

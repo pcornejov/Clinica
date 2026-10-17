@@ -12,6 +12,7 @@ import {
   notificaciones,
 } from "~/db/schema";
 import { aInstante, fechaLocal, sumarDias } from "~/lib/fechas";
+import { programarAvisosCita } from "./avisos/programar.server";
 import { generarCupos, type Cupo } from "./disponibilidad";
 
 /** Estados que liberan la hora (el resto la ocupa). */
@@ -129,8 +130,14 @@ export async function crearCita(
     sobrecupo?: boolean;
     /** Recepción puede agendar horas del mismo día sin anticipación mínima. */
     desdeInstante?: Date;
+    /**
+     * Pago online: la hora queda retenida como "pendiente de pago" durante
+     * unos minutos; si no se paga, el cron la libera.
+     */
+    pagoOnline?: boolean;
   },
 ): Promise<{ citaId: string } | ErrorCita> {
+  if (datos.pagoOnline && !clinica.modulos.pagoOnline) return { error: "El pago en línea no está disponible." };
   const [especialidad] = await db.select().from(especialidades).where(eq(especialidades.id, datos.especialidadId));
   if (!especialidad?.activa) return { error: "La especialidad no está disponible." };
 
@@ -173,15 +180,18 @@ export async function crearCita(
         especialidadId: datos.especialidadId,
         inicio: datos.inicio,
         fin,
-        estado: "agendada",
+        estado: datos.pagoOnline ? "pendiente_pago" : "agendada",
         canal: datos.canal,
-        modalidadPago: "clinica",
+        modalidadPago: datos.pagoOnline ? "online" : "clinica",
+        reservaExpiraEn: datos.pagoOnline ? new Date(Date.now() + clinica.reglas.reservaPagoMinutos * 60_000) : null,
         precio: especialidad.precio,
         sobrecupo: datos.sobrecupo ?? false,
         motivoConsulta: datos.motivoConsulta ?? null,
         requiereRevision: datos.requiereRevision ?? false,
       })
       .returning({ id: citas.id });
+    // Con pago online, la confirmación se envía recién cuando el pago se aprueba.
+    if (!datos.pagoOnline) await programarAvisosCita(db, cita.id, "confirmacion");
     return { citaId: cita.id };
   } catch (error) {
     if (esConflictoHorario(error)) return { error: "Alguien acaba de tomar esa hora. Por favor elige otra." };
@@ -203,6 +213,8 @@ export async function anularCita(
     .update(citas)
     .set({ estado: "cancelada", canceladaEn: new Date(), motivoCancelacion: motivo })
     .where(and(eq(citas.id, citaId), inArray(citas.estado, [...ESTADOS_GESTIONABLES])));
+  // Una reserva que nunca se pagó no recibe aviso de anulación.
+  if (cita.estado !== "pendiente_pago") await programarAvisosCita(db, cita.id, "cancelacion");
   if (!cita.sobrecupo) await ofrecerHoraLiberada(db, cita);
   return { ok: true };
 }
@@ -214,6 +226,7 @@ export async function reagendarCita(
 ): Promise<{ ok: true } | ErrorCita> {
   const [cita] = await db.select().from(citas).where(eq(citas.id, citaId));
   if (!cita) return { error: "La cita no existe." };
+  if (cita.estado === "pendiente_pago") return { error: "Primero completa el pago de esta hora." };
   if (!(ESTADOS_GESTIONABLES as readonly string[]).includes(cita.estado) || cita.inicio <= new Date()) {
     return { error: "Esta cita ya no se puede reagendar." };
   }
@@ -238,6 +251,7 @@ export async function reagendarCita(
     if (esConflictoHorario(error)) return { error: "Alguien acaba de tomar esa hora. Por favor elige otra." };
     throw error;
   }
+  await programarAvisosCita(db, cita.id, "reagendamiento");
   await ofrecerHoraLiberada(db, cita);
   return { ok: true };
 }
@@ -270,18 +284,20 @@ export async function ofrecerHoraLiberada(
   if (!candidato) return;
 
   // Una misma hora liberada se ofrece una sola vez (índice único por cita, canal y tipo).
-  const [aviso] = await db
+  const avisos = await db
     .insert(notificaciones)
-    .values({
-      citaId: cita.id,
-      pacienteId: candidato.pacienteId,
-      canal: "email",
-      tipo: "lista_espera",
-      programadaPara: new Date(),
-    })
+    .values(
+      (["email", "whatsapp"] as const).map((canal) => ({
+        citaId: cita.id,
+        pacienteId: candidato.pacienteId,
+        canal,
+        tipo: "lista_espera" as const,
+        programadaPara: new Date(),
+      })),
+    )
     .onConflictDoNothing()
     .returning({ id: notificaciones.id });
-  if (!aviso) return;
+  if (avisos.length === 0) return;
   await db
     .update(listaEspera)
     .set({ estado: "notificada", notificadaEn: new Date() })

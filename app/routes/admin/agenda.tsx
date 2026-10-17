@@ -5,13 +5,16 @@ import { z } from "zod";
 import { Aviso, Campo, CampoSelect, type ResultadoAccion } from "~/components/formulario";
 import { estiloEstadoCita, textoEstadoCita } from "~/components/panel";
 import { bloqueosAgenda, citas, especialidades, horariosMedico, medicoEspecialidades, medicos, pacientes } from "~/db/schema";
-import { contextoApp, contextoUsuario } from "~/lib/contexto";
+import { contextoApp, contextoUsuario, enSegundoPlano } from "~/lib/contexto";
 import { aInstante, fechaLocal, formatearDia, formatearHora, sumarDias } from "~/lib/fechas";
 import { validar } from "~/lib/formularios";
 import { formatearRut, normalizarRut, validarRut } from "~/lib/rut";
 import { formatearTelefono, normalizarTelefono } from "~/lib/telefono";
 import { registrarAuditoria } from "~/modules/auditoria.server";
-import { anularCita, crearCita } from "~/modules/citas.server";
+import { procesarCola } from "~/modules/avisos/cola.server";
+import { programarAvisosCita } from "~/modules/avisos/programar.server";
+import { crearCita } from "~/modules/citas.server";
+import { anularConDevolucion, pagosDeCitas, registrarPagoCaja, TEXTO_MEDIO } from "~/modules/pagos.server";
 import { generarCupos } from "~/modules/disponibilidad";
 import { asegurarCuentaPaciente, obtenerOCrearPaciente } from "~/modules/pacientes.server";
 import type { Route } from "./+types/agenda";
@@ -47,6 +50,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         sobrecupo: citas.sobrecupo,
         canal: citas.canal,
         requiereRevision: citas.requiereRevision,
+        precio: citas.precio,
         motivo: citas.motivoConsulta,
         paciente: { nombres: pacientes.nombres, apellidos: pacientes.apellidos, rut: pacientes.rut, telefono: pacientes.telefono },
         especialidad: especialidades.nombre,
@@ -69,6 +73,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const activas = delDia.filter((c) => c.estado !== "cancelada" && c.estado !== "no_asistio" && !c.sobrecupo);
   const cruza = (a: { inicio: Date; fin: Date }, b: { inicio: Date; fin: Date }) => a.inicio < b.fin && b.inicio < a.fin;
 
+  const pagos = await pagosDeCitas(db, delDia.map((c) => c.id));
   const filas = [
     ...cupos
       .filter((cupo) => !activas.some((c) => cruza(cupo, c)))
@@ -85,6 +90,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         rut: formatearRut(c.paciente.rut),
         telefono: c.paciente.telefono ? formatearTelefono(c.paciente.telefono) : null,
         pasada: c.inicio < new Date(),
+        pago: (() => {
+          const p = pagos.get(c.id);
+          return p ? { estado: p.estado, medio: TEXTO_MEDIO[p.medio], devolucionPendiente: !!p.detalle?.reembolsoPendiente } : null;
+        })(),
       },
     })),
   ].sort((a, b) => a.inicio.localeCompare(b.inicio) || (a.tipo === "cita" ? 1 : -1));
@@ -117,8 +126,16 @@ const esquemaAgendar = z.object({
   sobrecupo: z.literal("1").optional(),
 });
 
+const esquemaCobro = z.object({
+  citaId: z.uuid(),
+  medio: z.enum(["efectivo", "tarjeta", "transferencia", "bono_fonasa", "bono_isapre", "convenio"]),
+  monto: z.coerce.number("Ingresa el monto").int().min(0, "Monto inválido"),
+  folio: z.string().trim().optional().transform((v) => v || null),
+});
+
 export async function action({ request, context }: Route.ActionArgs) {
-  const { db } = context.get(contextoApp);
+  const app = context.get(contextoApp);
+  const { db } = app;
   const usuario = context.get(contextoUsuario);
   const url = new URL(request.url);
   const formulario = await request.formData();
@@ -133,8 +150,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     if (!cita) return data<ResultadoAccion>({ seccion: "general", error: "La cita no existe" }, { status: 404 });
 
     if (estado === "cancelada") {
-      const r = await anularCita(db, citaId, "Anulada por recepción");
+      // Si anula la clínica, siempre se devuelve lo pagado con Webpay.
+      const r = await anularConDevolucion(app, citaId, "Anulada por recepción", { porLaClinica: true });
       if ("error" in r) return data<ResultadoAccion>({ seccion: citaId, error: r.error }, { status: 409 });
+      enSegundoPlano(app, procesarCola(db, app.env));
+      if (r.devolucion === "pendiente") {
+        return data<ResultadoAccion>({ seccion: citaId, error: "Anulada, pero la devolución de Webpay falló: hay que hacerla manualmente." });
+      }
     } else {
       const permitido =
         (estado === "confirmada" && cita.estado === "agendada") ||
@@ -189,7 +211,33 @@ export async function action({ request, context }: Route.ActionArgs) {
       entidad: "cita",
       entidadId: resultado.citaId,
     });
+    enSegundoPlano(app, procesarCola(db, app.env));
     return data<ResultadoAccion>({ seccion: "general", ok: `Hora agendada para ${paciente.nombres} ${paciente.apellidos}` });
+  }
+
+  if (intencion === "recordar") {
+    const citaId = z.uuid().safeParse(formulario.get("citaId")).data;
+    const [cita] = citaId ? await db.select().from(citas).where(eq(citas.id, citaId)) : [];
+    if (!cita || !["agendada", "confirmada"].includes(cita.estado) || cita.inicio <= new Date()) {
+      return data<ResultadoAccion>({ seccion: citaId ?? "general", error: "Solo se recuerdan citas futuras vigentes" }, { status: 409 });
+    }
+    await programarAvisosCita(db, cita.id, "recordatorio_ahora");
+    enSegundoPlano(app, procesarCola(db, app.env));
+    return data<ResultadoAccion>({ seccion: cita.id, ok: "Recordatorio enviado" });
+  }
+
+  if (intencion === "cobrar") {
+    const r = validar(esquemaCobro, formulario);
+    const citaId = String(formulario.get("citaId") ?? "");
+    const seccion = `cobro-${citaId}`;
+    if (!r.ok) return data<ResultadoAccion>({ seccion, errores: r.errores }, { status: 400 });
+    if ((r.datos.medio === "bono_fonasa" || r.datos.medio === "bono_isapre") && !r.datos.folio) {
+      return data<ResultadoAccion>({ seccion, errores: { folio: "Ingresa el folio del bono" } }, { status: 400 });
+    }
+    const resultado = await registrarPagoCaja(db, { ...r.datos, usuarioId: usuario.id });
+    if ("error" in resultado) return data<ResultadoAccion>({ seccion, error: resultado.error }, { status: 409 });
+    await registrarAuditoria(db, request, { usuarioId: usuario.id, accion: "registrar_pago", entidad: "cita", entidadId: r.datos.citaId, detalle: { medio: r.datos.medio, monto: r.datos.monto } });
+    return data<ResultadoAccion>({ seccion: r.datos.citaId, ok: "Pago registrado" });
   }
 
   return data<ResultadoAccion>({ seccion: "general", error: "Acción no válida" }, { status: 400 });
@@ -361,10 +409,12 @@ export default function Agenda({ loaderData, actionData }: Route.ComponentProps)
                   </p>
                 </div>
                 <span className={`rounded-full px-2.5 py-1 text-xs ${estiloEstadoCita[c.estado]}`}>{textoEstadoCita[c.estado]}</span>
+                <EstadoPago cita={c} resultado={r} />
                 {!inactiva && c.estado !== "atendida" && (
                   <div className="flex gap-2">
                     {c.estado === "agendada" && <BotonEstado citaId={c.id} estado="confirmada" texto="Confirmar" />}
                     {c.pasada && <BotonEstado citaId={c.id} estado="no_asistio" texto="No asistió" />}
+                    {!c.pasada && c.estado !== "pendiente_pago" && <BotonAccion citaId={c.id} intent="recordar" texto="Recordar" />}
                     {!c.pasada && <BotonEstado citaId={c.id} estado="cancelada" texto="Anular" peligro />}
                   </div>
                 )}
@@ -377,6 +427,57 @@ export default function Agenda({ loaderData, actionData }: Route.ComponentProps)
         </ul>
       </div>
     </>
+  );
+}
+
+type FilaCita = Extract<Route.ComponentProps["loaderData"]["filas"][number], { tipo: "cita" }>["cita"];
+
+/** Pagado / devuelto, o el botón para cobrar en caja. */
+function EstadoPago({ cita, resultado }: { cita: FilaCita; resultado?: ResultadoAccion }) {
+  const { pago } = cita;
+  if (pago?.estado === "pagado") {
+    return (
+      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800">
+        Pagado · {pago.medio}
+        {pago.devolucionPendiente && " · devolución pendiente"}
+      </span>
+    );
+  }
+  if (pago?.estado === "reembolsado") return <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">Pago devuelto</span>;
+  if (cita.estado === "cancelada" || cita.estado === "pendiente_pago") return null;
+
+  const seccion = `cobro-${cita.id}`;
+  const errores = resultado?.seccion === seccion ? (resultado.errores ?? {}) : {};
+  return (
+    <details className="relative" open={resultado?.seccion === seccion}>
+      <summary className="cursor-pointer list-none rounded-md border border-marca-100 bg-marca-50 px-2.5 py-1 text-xs text-marca-700">Cobrar</summary>
+      <Form method="post" className="absolute right-0 z-10 mt-2 w-72 space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+        <input type="hidden" name="intent" value="cobrar" />
+        <input type="hidden" name="citaId" value={cita.id} />
+        <CampoSelect etiqueta="Medio de pago" name="medio">
+          <option value="bono_fonasa">Bono Fonasa</option>
+          <option value="bono_isapre">Bono Isapre</option>
+          <option value="efectivo">Efectivo</option>
+          <option value="tarjeta">Tarjeta</option>
+          <option value="transferencia">Transferencia</option>
+          <option value="convenio">Convenio</option>
+        </CampoSelect>
+        <Campo etiqueta="Monto (CLP)" name="monto" type="number" defaultValue={cita.precio} error={errores.monto} />
+        <Campo etiqueta="Folio del bono" name="folio" ayuda="Obligatorio para bonos" error={errores.folio} />
+        {resultado?.seccion === seccion && resultado.error && <Aviso tipo="error">{resultado.error}</Aviso>}
+        <button className="w-full rounded-lg bg-marca-600 px-3 py-2 text-sm font-medium text-white hover:bg-marca-700">Registrar pago</button>
+      </Form>
+    </details>
+  );
+}
+
+function BotonAccion({ citaId, intent, texto }: { citaId: string; intent: string; texto: string }) {
+  return (
+    <Form method="post">
+      <input type="hidden" name="intent" value={intent} />
+      <input type="hidden" name="citaId" value={citaId} />
+      <button className="rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">{texto}</button>
+    </Form>
   );
 }
 

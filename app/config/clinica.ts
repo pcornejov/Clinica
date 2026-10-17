@@ -28,5 +28,12 @@ export const clinica = {
     cancelacionConDevolucionHoras: 24,
     /** Minutos que se retiene una hora mientras se paga online. */
     reservaPagoMinutos: 15,
+    /** Horas antes de la cita en que se envía el recordatorio. */
+    recordatorioHorasAntes: 24,
+  },
+
+  avisos: {
+    /** Idioma de las plantillas de WhatsApp aprobadas en Meta. */
+    idiomaWhatsapp: "es",
   },
 } as const;
