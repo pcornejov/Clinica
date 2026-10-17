@@ -85,6 +85,8 @@ async function enviarUna(db: Db, env: Env, n: Notificacion): Promise<"enviada" |
     return "enviada";
   }
 
+  // La plantilla de lista de espera no está aprobada en Meta (la toma como Marketing).
+  if (n.tipo === "lista_espera") return omitir("La lista de espera avisa solo por correo");
   // WhatsApp exige consentimiento explícito (Ley 21.719).
   if (!p.contacto.telefono) return omitir("Sin celular registrado");
   if (!p.contacto.consentimientoContactoEn) return omitir("Sin consentimiento para WhatsApp");

@@ -27,11 +27,13 @@ export type DatosAviso = {
 
 /** Plantillas de WhatsApp: nombre en Meta y texto con variables {{n}}. */
 export const PLANTILLAS_WHATSAPP = {
-  cita_confirmada: "Hola {{1}}, tu hora de {{2}} con {{3}} quedó reservada para el {{4}}. Para ver, cambiar o anular tu hora: {{5}}",
+  // Meta no admite cuerpos que terminen en una variable: por eso cierran con "Gracias.".
+  cita_confirmada: "Hola {{1}}, tu hora de {{2}} con {{3}} quedó reservada para el {{4}}. Para ver, cambiar o anular tu hora: {{5}} Gracias.",
   cita_recordatorio: "Hola {{1}}, te recordamos tu hora de {{2}} con {{3}} el {{4}}. ¿Asistirás? Responde con uno de los botones.",
-  cita_reagendada: "Hola {{1}}, tu hora de {{2}} con {{3}} cambió al {{4}}. Para ver o gestionar tu hora: {{5}}",
-  cita_anulada: "Hola {{1}}, tu hora de {{2}} del {{3}} fue anulada. Si quieres agendar una nueva hora: {{4}}",
-  hora_liberada: "Hola {{1}}, se liberó una hora de {{2}} con {{3}} el {{4}}. Si te sirve, resérvala aquí: {{5}}",
+  cita_reagendada: "Hola {{1}}, tu hora de {{2}} con {{3}} cambió al {{4}}. Para ver o gestionar tu hora: {{5}} Gracias.",
+  cita_anulada: "Hola {{1}}, tu hora de {{2}} del {{3}} fue anulada. Si quieres agendar una nueva hora: {{4}} Gracias.",
+  // Sin aprobar: Meta la clasifica como Marketing. La lista de espera avisa solo por correo.
+  hora_liberada: "Hola {{1}}, se liberó la hora de {{2}} con {{3}} el {{4}} que esperabas en tu lista de espera. Para reservarla ingresa aquí: {{5}} Gracias.",
 } as const;
 
 export type NombrePlantilla = keyof typeof PLANTILLAS_WHATSAPP;

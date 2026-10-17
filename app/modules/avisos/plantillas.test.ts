@@ -18,7 +18,7 @@ describe("plantillas de avisos", () => {
     expect(aviso.email.asunto).toBe("Hora reservada: Martes, 3 de noviembre, 09:30");
     expect(aviso.email.html).toContain('href="https://clinica.test/cita/abc.firma"');
     expect(textoWhatsapp(aviso.whatsapp)).toBe(
-      "Hola Carla, tu hora de Pediatría con Javiera Contreras Silva quedó reservada para el Martes, 3 de noviembre, 09:30. Para ver, cambiar o anular tu hora: https://clinica.test/cita/abc.firma",
+      "Hola Carla, tu hora de Pediatría con Javiera Contreras Silva quedó reservada para el Martes, 3 de noviembre, 09:30. Para ver, cambiar o anular tu hora: https://clinica.test/cita/abc.firma Gracias.",
     );
   });
 

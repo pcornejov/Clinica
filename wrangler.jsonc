@@ -7,17 +7,17 @@
   "observability": { "enabled": true },
   // Archivos de la ficha clínica (exámenes, informes). Crear el bucket con:
   // npx wrangler r2 bucket create clinica-archivos
-  "r2_buckets": [{ "binding": "ARCHIVOS", "bucket_name": "clinica-archivos" }],
+  // "r2_buckets": [{ "binding": "ARCHIVOS", "bucket_name": "clinica-archivos" }],
   // Cron: recordatorios y liberación de reservas vencidas (Fase 3/4).
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
-    "APP_URL": "http://localhost:5173",
+    "APP_URL": "https://clinica.pablo-cornejo-v.workers.dev",
     // Muestra en pantalla el código de ingreso de pacientes mientras no se
     // envían correos (Fase 4). Poner en "false" antes de usarlo con pacientes reales.
     "MOSTRAR_CODIGOS_DEMO": "true",
     // Webpay: "integracion" (pruebas de Transbank), "produccion" o "simulado"
     // (pantalla propia que imita Webpay, sin contactar a Transbank).
-    "TRANSBANK_MODO": "integracion"
+    "TRANSBANK_MODO": "simulado"
   }
   // Secretos (no van aquí). Local: archivo .dev.vars. Producción:
   // `npx wrangler secret put <NOMBRE>`.
