@@ -6,10 +6,12 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/clinica
 BETTER_AUTH_SECRET=cambiar-por-un-secreto-largo
 
 # URL con la que se abre la app (se usa en los links de correos y WhatsApp).
-# APP_URL=http://localhost:5173
+# Para las pruebas e2e (vite preview), usar http://localhost:4173.
+APP_URL=http://localhost:5173
 
-# Webpay: "integracion", "produccion" o "simulado".
-# TRANSBANK_MODO=simulado
+# Webpay: "integracion", "produccion" o "simulado". En local y para las pruebas,
+# "simulado" (no depende de que Transbank responda).
+TRANSBANK_MODO=simulado
 
 # Correo con Resend (opcional; sin clave los correos se simulan y se ven en el panel).
 # RESEND_API_KEY=re_xxxxxxxx

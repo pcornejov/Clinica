@@ -9,10 +9,12 @@ Drizzle · Better Auth · Tailwind CSS.
 
 ## Desarrollo local
 
-Requisitos: Node 22.22 o superior y un PostgreSQL (local o una base en Neon).
+Requisitos: Node 22.22 o superior y un PostgreSQL (local, con Docker o una base
+en Neon). Para trabajar con Claude Code, ver [CLAUDE.md](CLAUDE.md).
 
 ```bash
 npm install
+docker compose up -d             # Postgres local (opcional si ya tienes uno)
 cp .dev.vars.example .dev.vars   # completar DATABASE_URL y BETTER_AUTH_SECRET
 npm run db:migrate               # crea las tablas
 npm run db:seed                  # carga los datos demo
@@ -47,6 +49,8 @@ activan con sus credenciales. Ver [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md)
 | `npm test` | Tests unitarios (Vitest) |
 | `npm run db:generate` | Genera una migración a partir de `app/db/schema.ts` |
 | `npm run db:migrate` | Aplica migraciones pendientes |
+| `npm run preview:e2e` | Compila y sirve la app en el puerto 4173 |
+| `npm run e2e` | Pruebas de punta a punta (con `preview:e2e` corriendo en otra terminal) |
 | `npm run deploy` | Compila y publica en Cloudflare |
 
 ## Publicar en Cloudflare (gratis)

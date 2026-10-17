@@ -14,7 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "tsx scripts/reset.ts && npm run db:migrate && npm run db:seed",
-    "db:cie10": "tsx scripts/importar-cie10.ts"
+    "db:cie10": "tsx scripts/importar-cie10.ts",
+    "e2e": "node e2e/ejecutar.mjs",
+    "preview:e2e": "npm run build && vite preview --port 4173 --strictPort"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
@@ -36,6 +38,7 @@
     "@types/react-dom": "^19.3.0",
     "dotenv": "^18.0.8",
     "drizzle-kit": "^0.31.11",
+    "playwright-core": "^1.64.1",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
