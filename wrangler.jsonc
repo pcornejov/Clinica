@@ -5,6 +5,9 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Archivos de la ficha clínica (exámenes, informes). Crear el bucket con:
+  // npx wrangler r2 bucket create clinica-archivos
+  "r2_buckets": [{ "binding": "ARCHIVOS", "bucket_name": "clinica-archivos" }],
   // Cron: recordatorios y liberación de reservas vencidas (Fase 3/4).
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {

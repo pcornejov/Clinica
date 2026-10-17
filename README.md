@@ -63,7 +63,9 @@ activan con sus credenciales. Ver [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md)
    `npx wrangler secret put BETTER_AUTH_SECRET`.
 5. En `wrangler.jsonc`, cambiar `APP_URL` por la URL final
    (`https://clinica.<tu-subdominio>.workers.dev`).
-6. `npm run deploy`.
+6. Crear el bucket para los archivos de la ficha:
+   `npx wrangler r2 bucket create clinica-archivos`.
+7. `npm run deploy`.
 
 ## Estructura
 

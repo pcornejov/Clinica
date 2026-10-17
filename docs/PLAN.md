@@ -78,6 +78,17 @@ contenido clínico.
 - **Código de ingreso de pacientes:** mientras no se envíen correos (Fase 4),
   se muestra en pantalla si `MOSTRAR_CODIGOS_DEMO` es `"true"` (en
   `wrangler.jsonc`). **Debe quedar en `"false"` con pacientes reales.**
+- **Ficha clínica:**
+  - Solo el rol médico la ve. Recepción y administración no acceden al
+    contenido clínico; la administración ve solo la auditoría de accesos.
+  - Un médico accede a pacientes con los que tiene o tuvo cita. Para otros
+    debe declarar un motivo (acceso excepcional, válido 12 h, queda auditado).
+  - Atenciones y diagnósticos firmados están protegidos por triggers en la base
+    de datos. Las correcciones son atenciones nuevas con `corrige_a`.
+  - Catálogo CIE-10 básico (116 códigos frecuentes). El completo se importa
+    desde el CSV del DEIS-MINSAL con `npm run db:cie10 -- archivo.csv`.
+  - Archivos en R2: solo PDF, PNG y JPG, validados por su contenido real, de
+    máximo 10 MB.
 - **Integraciones:** ver [INTEGRACIONES.md](INTEGRACIONES.md). Sin credenciales,
   Webpay, correo y WhatsApp funcionan en modo simulado y todo queda visible en
   Panel → Avisos.
@@ -156,7 +167,7 @@ contacto no coincide con el registrado, la cita se marca con
 | 2. Agendamiento | Disponibilidad, reserva con RUT (invitado), búsqueda por especialidad, profesional o Express, filtro Fonasa, grupo familiar, cuenta automática con ingreso por código, mis citas, link firmado para anular y reagendar, agenda diaria de recepción con sobrecupo, lista de espera con aviso automático | ✅ Lista |
 | 3. Pagos | Cobro en caja (bono Fonasa/Isapre con folio, efectivo, tarjeta, transferencia, convenio), caja del día, Webpay Plus (integración, producción o simulado) con reserva temporal de 15 min, retorno idempotente, devolución según regla de 24 h | ✅ Lista |
 | 4. Notificaciones | Confirmación, recordatorio 24 h, cambio, anulación y hora liberada por correo (Resend) y WhatsApp (Meta), con botones Confirmar/Anular; cola con reintentos sin duplicados; panel de avisos; modo simulado sin credenciales | ✅ Lista · ⭐ demo comercial mínima |
-| 5. Ficha clínica | Portal médico, antecedentes, atenciones, CIE-10, adjuntos (R2), auditoría | Pendiente · ⭐ demo completa |
+| 5. Ficha clínica | Agenda del médico con alergias a la vista, ficha con antecedentes, historial de toda la clínica, atención con signos vitales, IMC y diagnósticos CIE-10, borrador → firma (inmutable) → corrección vinculada, indicaciones imprimibles, exámenes en R2, acceso solo de médicos tratantes o acceso excepcional con motivo, auditoría de accesos | ✅ Lista · ⭐ demo completa |
 | 6. Bot de WhatsApp | Agendamiento por conversación | Pendiente |
 | 7. Personalización | Marca, módulos y reglas configurables desde el panel | Pendiente |
 

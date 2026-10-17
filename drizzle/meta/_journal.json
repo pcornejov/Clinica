@@ -22,6 +22,20 @@
       "when": 1792259993368,
       "tag": "0002_pagos_y_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792261089202,
+      "tag": "0003_cie10",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792261090079,
+      "tag": "0004_diagnosticos_inmutables",
+      "breakpoints": true
     }
   ]
 }

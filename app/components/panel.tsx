@@ -30,7 +30,7 @@ export function Panel({
                 <NavLink
                   key={e.a}
                   to={e.a}
-                  end={e.a === "/admin"}
+                  end={e.a === "/admin" || e.a === "/medico"}
                   className={({ isActive }) =>
                     `rounded-md px-3 py-1.5 ${isActive ? "bg-marca-50 text-marca-700" : "text-slate-600 hover:bg-slate-100"}`
                   }

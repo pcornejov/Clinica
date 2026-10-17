@@ -11,6 +11,7 @@ import * as s from "../app/db/schema";
 import { aInstante, diaSemanaLocal, fechaLocal, sumarDias } from "../app/lib/fechas";
 import { hashPassword } from "../app/lib/password";
 import { calcularDv } from "../app/lib/rut";
+import { CIE10_BASICO, normalizarBusqueda } from "../app/db/cie10-basico";
 
 config({ path: [".dev.vars", ".env"], quiet: true });
 
@@ -97,25 +98,51 @@ for (let i = 0; i < 48; i++) {
   PACIENTES.push([nombre, apellidos, fecha, sexo, (["fonasa", "fonasa", "isapre", "particular"] as const)[i % 4]]);
 }
 
-const MOTIVOS = [
-  "Control",
-  "Dolor de cabeza recurrente",
-  "Tos y fiebre",
-  "Dolor lumbar",
-  "Control de presión arterial",
-  "Revisión de exámenes",
-  "Molestias estomacales",
-  "Chequeo preventivo",
-];
+type Caso = { motivo: string; codigo: string; diagnostico: string; anamnesis: string; indicaciones: string };
 
-const DIAGNOSTICOS: [string, string][] = [
-  ["J06.9", "Infección aguda de las vías respiratorias superiores, no especificada"],
-  ["I10", "Hipertensión esencial (primaria)"],
-  ["M54.5", "Lumbago no especificado"],
-  ["R51", "Cefalea"],
-  ["K30", "Dispepsia"],
-  ["Z00.0", "Examen médico general"],
-];
+/** Casos coherentes por especialidad para el historial demo. */
+const CASOS: Record<Slug, Caso[]> = {
+  "medicina-general": [
+    { motivo: "Tos y fiebre", codigo: "J06.9", diagnostico: "Infección aguda de las vías respiratorias superiores, no especificada", anamnesis: "Cuadro de 3 días de tos seca, odinofagia y fiebre hasta 38,2 °C. Sin disnea.", indicaciones: "Paracetamol 1 g cada 8 horas si hay fiebre o dolor. Hidratación abundante. Consultar si presenta dificultad respiratoria." },
+    { motivo: "Control de presión arterial", codigo: "I10", diagnostico: "Hipertensión esencial (primaria)", anamnesis: "Paciente hipertenso en tratamiento. Refiere buena adherencia. Sin cefalea ni dolor torácico.", indicaciones: "Mantener tratamiento. Dieta baja en sal. Control de presión en domicilio y nuevo control en 3 meses." },
+    { motivo: "Molestias estomacales", codigo: "K30", diagnostico: "Dispepsia", anamnesis: "Ardor epigástrico postprandial de 2 semanas. Sin vómitos ni baja de peso.", indicaciones: "Omeprazol 20 mg en ayunas por 4 semanas. Evitar comidas copiosas, café y alcohol." },
+    { motivo: "Chequeo preventivo", codigo: "Z00.0", diagnostico: "Examen médico general", anamnesis: "Asintomático. Consulta para examen preventivo anual.", indicaciones: "Exámenes de sangre en ayunas: perfil lipídico, glicemia y hemograma. Control con resultados." },
+    { motivo: "Dolor de cabeza recurrente", codigo: "G44.2", diagnostico: "Cefalea debida a tensión", anamnesis: "Cefalea opresiva bilateral vespertina, asociada a estrés laboral. Sin signos de alarma.", indicaciones: "Ibuprofeno 400 mg cada 8 horas por máximo 3 días si hay dolor. Higiene del sueño y pausas activas." },
+  ],
+  pediatria: [
+    { motivo: "Control de niño sano", codigo: "Z00.1", diagnostico: "Control de salud de rutina del niño", anamnesis: "Control de rutina. Buen incremento ponderal. Desarrollo acorde a la edad.", indicaciones: "Alimentación variada. Vacunas al día según calendario. Próximo control en 6 meses." },
+    { motivo: "Fiebre y tos", codigo: "J06.9", diagnostico: "Infección aguda de las vías respiratorias superiores, no especificada", anamnesis: "Fiebre de 2 días hasta 38,5 °C, rinorrea y tos. Buena ingesta de líquidos.", indicaciones: "Paracetamol según peso cada 6 horas si hay fiebre. Aseo nasal con suero. Consultar si respira con dificultad." },
+    { motivo: "Diarrea", codigo: "A09", diagnostico: "Diarrea y gastroenteritis de presunto origen infeccioso", anamnesis: "Deposiciones líquidas desde ayer, sin sangre. Bien hidratado.", indicaciones: "Sales de rehidratación oral después de cada deposición. Dieta liviana. Consultar si no tolera líquidos." },
+  ],
+  ginecologia: [
+    { motivo: "Control ginecológico anual", codigo: "Z01.4", diagnostico: "Examen ginecológico (general) (de rutina)", anamnesis: "Control anual. Ciclos regulares. Sin molestias.", indicaciones: "Papanicolaou tomado; se informará resultado. Mamografía según edad. Control en 1 año." },
+    { motivo: "Consejería en anticoncepción", codigo: "Z30.0", diagnostico: "Consejo y asesoramiento general sobre la anticoncepción", anamnesis: "Consulta por opciones de anticoncepción. Sin contraindicaciones.", indicaciones: "Se explican alternativas. Iniciar método elegido el primer día de la menstruación. Control en 3 meses." },
+    { motivo: "Dolor menstrual", codigo: "N94.6", diagnostico: "Dismenorrea, no especificada", anamnesis: "Dolor pélvico los primeros dos días del ciclo, que limita sus actividades.", indicaciones: "Ibuprofeno 400 mg cada 8 horas desde el inicio del dolor. Ecografía pélvica. Control con resultado." },
+  ],
+  cardiologia: [
+    { motivo: "Control de hipertensión", codigo: "I10", diagnostico: "Hipertensión esencial (primaria)", anamnesis: "Hipertensión en tratamiento. Presiones en domicilio sobre la meta.", indicaciones: "Ajuste de tratamiento antihipertensivo. Registro de presión en domicilio. Control en 1 mes." },
+    { motivo: "Palpitaciones", codigo: "I48", diagnostico: "Fibrilación y aleteo auricular", anamnesis: "Episodios de palpitaciones irregulares de minutos de duración.", indicaciones: "Holter de 24 horas y ecocardiograma. Evitar estimulantes. Control con resultados." },
+    { motivo: "Colesterol alto", codigo: "E78.0", diagnostico: "Hipercolesterolemia pura", anamnesis: "Exámenes recientes con colesterol LDL elevado. Sin síntomas.", indicaciones: "Dieta baja en grasas saturadas y actividad física 150 minutos a la semana. Perfil lipídico en 3 meses." },
+  ],
+  dermatologia: [
+    { motivo: "Acné", codigo: "L70.0", diagnostico: "Acné vulgar", anamnesis: "Lesiones comedonianas y pápulas en cara de 1 año de evolución.", indicaciones: "Limpieza facial dos veces al día. Tratamiento tópico nocturno. Protector solar diario. Control en 2 meses." },
+    { motivo: "Control de lunares", codigo: "D22.9", diagnostico: "Nevo melanocítico, sitio no especificado", anamnesis: "Consulta para revisión de lunares. Sin cambios recientes referidos.", indicaciones: "Lesiones de aspecto benigno a la dermatoscopía. Fotoprotección. Autoexamen mensual. Control anual." },
+    { motivo: "Picazón en la piel", codigo: "L20.9", diagnostico: "Dermatitis atópica, no especificada", anamnesis: "Placas eccematosas en pliegues con prurito intenso nocturno.", indicaciones: "Hidratación de la piel dos veces al día. Crema indicada en lesiones por 7 días. Evitar jabones perfumados." },
+  ],
+  traumatologia: [
+    { motivo: "Dolor lumbar", codigo: "M54.5", diagnostico: "Lumbago no especificado", anamnesis: "Dolor lumbar mecánico tras esfuerzo, sin irradiación ni déficit neurológico.", indicaciones: "Paracetamol 1 g cada 8 horas por 5 días. Calor local. Evitar cargar peso. Kinesiología si persiste." },
+    { motivo: "Esguince de tobillo", codigo: "S93.4", diagnostico: "Esguince y torcedura del tobillo", anamnesis: "Inversión forzada del tobillo derecho jugando fútbol. Aumento de volumen lateral.", indicaciones: "Reposo, hielo 20 minutos cada 4 horas, vendaje y elevación. Control en 10 días." },
+    { motivo: "Dolor de rodilla", codigo: "M17.9", diagnostico: "Gonartrosis, no especificada", anamnesis: "Dolor de rodilla al subir escaleras de meses de evolución.", indicaciones: "Bajar de peso, ejercicios de fortalecimiento de cuádriceps. Radiografía de rodillas. Control con resultado." },
+  ],
+  psicologia: [
+    { motivo: "Ansiedad", codigo: "F41.1", diagnostico: "Trastorno de ansiedad generalizada", anamnesis: "Preocupación persistente, tensión muscular e insomnio de inicio de 6 meses.", indicaciones: "Psicoterapia semanal. Técnicas de respiración diafragmática diarias. Próxima sesión en 1 semana." },
+    { motivo: "Estrés laboral", codigo: "F43.2", diagnostico: "Trastornos de adaptación", anamnesis: "Sintomatología ansiosa y anímica asociada a cambios laborales recientes.", indicaciones: "Psicoterapia quincenal. Registro de situaciones gatillantes. Higiene del sueño." },
+  ],
+  nutricion: [
+    { motivo: "Control de peso", codigo: "E66.9", diagnostico: "Obesidad, no especificada", anamnesis: "Consulta para baja de peso. Alimentación con alto consumo de ultraprocesados.", indicaciones: "Plan de alimentación entregado. Aumentar verduras y agua. Actividad física 30 minutos diarios. Control en 1 mes." },
+    { motivo: "Orientación alimentaria", codigo: "Z71.3", diagnostico: "Consulta y supervisión de la dieta", anamnesis: "Busca mejorar sus hábitos de alimentación.", indicaciones: "Pauta de alimentación saludable. Planificar comidas semanales. Control en 2 meses." },
+  ],
+};
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -142,6 +169,11 @@ async function main() {
       });
       return id;
     }
+
+    // Catálogo CIE-10 básico
+    await db.insert(s.cie10).values(
+      CIE10_BASICO.map(([codigo, descripcion]) => ({ codigo, descripcion, busqueda: normalizarBusqueda(`${codigo} ${descripcion}`) })),
+    );
 
     // Personal
     await crearUsuario("Administración Demo", `admin@${DOMINIO}`, "admin");
@@ -288,14 +320,23 @@ async function main() {
         const ocupacion = offset >= 0 ? 0.4 : 0.035;
         for (const inicio of cupos) {
           if (azar() > ocupacion) continue;
-          const paciente = elegir(pacientes);
+          const slug = especialidades.find((e) => e.id === medico.especialidadId)!.slug as Slug;
+          // Pediatría atiende niños y ginecología, mujeres.
+          const candidatos =
+            slug === "pediatria"
+              ? pacientes.filter((p) => (p.fechaNacimiento ?? "") >= "2008-01-01")
+              : slug === "ginecologia"
+                ? pacientes.filter((p) => p.sexo === "F" && (p.fechaNacimiento ?? "") < "2010-01-01")
+                : pacientes.filter((p) => (p.fechaNacimiento ?? "") < "2010-01-01");
+          const paciente = elegir(candidatos.length ? candidatos : pacientes);
+          const caso = elegir(CASOS[slug]);
           const fin = new Date(inicio.getTime() + medico.duracion * 60_000);
           const pasada = fin.getTime() < ahora;
           const estado: s.EstadoCita = pasada
             ? azar() < 0.88 ? "atendida" : "no_asistio"
             : azar() < 0.5 ? "confirmada" : "agendada";
           const precio = especialidades.find((e) => e.id === medico.especialidadId)!.precio;
-          const motivo = elegir(MOTIVOS);
+          const motivo = caso.motivo;
 
           const [cita] = await db
             .insert(s.citas)
@@ -333,7 +374,7 @@ async function main() {
           }
 
           if (estado === "atendida") {
-            const [diagCodigo, diagTexto] = elegir(DIAGNOSTICOS);
+            const [diagCodigo, diagTexto] = [caso.codigo, caso.diagnostico];
             const [atencion] = await db
               .insert(s.atenciones)
               .values({
@@ -343,7 +384,7 @@ async function main() {
                 especialidadId: medico.especialidadId,
                 fecha: inicio,
                 motivoConsulta: motivo,
-                anamnesis: `Paciente consulta por ${motivo.toLowerCase()}. Evolución de ${1 + Math.floor(azar() * 10)} días.`,
+                anamnesis: caso.anamnesis,
                 examenFisico: "Paciente en buen estado general, vigil, orientado. Sin hallazgos de urgencia.",
                 signosVitales: {
                   presionSistolica: 110 + Math.floor(azar() * 35),
@@ -352,9 +393,7 @@ async function main() {
                   temperatura: Math.round((36.2 + azar() * 1.6) * 10) / 10,
                   saturacion: 95 + Math.floor(azar() * 5),
                 },
-                indicaciones: "Reposo relativo, hidratación abundante. Control en 2 semanas o antes si empeora.",
-                estado: "firmada",
-                firmadaEn: fin,
+                indicaciones: caso.indicaciones,
               })
               .returning();
             await db.insert(s.diagnosticos).values({
@@ -362,6 +401,8 @@ async function main() {
               codigoCie10: diagCodigo,
               descripcion: diagTexto,
             });
+            // Igual que en la app: primero los diagnósticos, después se firma.
+            await db.update(s.atenciones).set({ estado: "firmada", firmadaEn: fin }).where(eq(s.atenciones.id, atencion.id));
             totalAtenciones++;
           }
         }

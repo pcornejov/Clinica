@@ -513,6 +513,21 @@ export const adjuntos = pgTable(
   (t) => [index("adjuntos_paciente_idx").on(t.pacienteId)],
 );
 
+/**
+ * Catálogo CIE-10 (OMS). Se carga un catálogo básico con los datos demo; el
+ * completo se importa desde el archivo del DEIS-MINSAL (scripts/importar-cie10.ts).
+ */
+export const cie10 = pgTable(
+  "cie10",
+  {
+    codigo: text("codigo").primaryKey(),
+    descripcion: text("descripcion").notNull(),
+    /** Código y descripción en minúsculas y sin tildes, para buscar. */
+    busqueda: text("busqueda").notNull(),
+  },
+  (t) => [index("cie10_busqueda_idx").on(t.busqueda)],
+);
+
 // ─── Auditoría ──────────────────────────────────────────────────────────────
 
 /** Quién vio o modificó qué y cuándo (exigido para fichas clínicas). */

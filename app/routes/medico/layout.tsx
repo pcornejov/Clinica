@@ -10,5 +10,13 @@ export function loader({ context }: Route.LoaderArgs) {
 }
 
 export default function LayoutMedico({ loaderData }: Route.ComponentProps) {
-  return <Panel usuario={loaderData.usuario} enlaces={[{ a: "/medico", texto: "Mi agenda" }]} />;
+  return (
+    <Panel
+      usuario={loaderData.usuario}
+      enlaces={[
+        { a: "/medico", texto: "Mi agenda" },
+        { a: "/medico/pacientes", texto: "Pacientes" },
+      ]}
+    />
+  );
 }

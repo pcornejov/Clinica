@@ -38,12 +38,23 @@ export default [
       route("medicos/nuevo", "routes/admin/medico-nuevo.tsx"),
       route("medicos/:id", "routes/admin/medico.tsx"),
       route("usuarios", "routes/admin/usuarios.tsx"),
+      route("auditoria", "routes/admin/auditoria.tsx"),
     ]),
     route("pacientes/buscar", "routes/admin/pacientes-buscar.ts"),
   ]),
 
   // Portal médico
-  ...prefix("medico", [layout("routes/medico/layout.tsx", [index("routes/medico/inicio.tsx")])]),
+  ...prefix("medico", [
+    layout("routes/medico/layout.tsx", [
+      index("routes/medico/inicio.tsx"),
+      route("pacientes", "routes/medico/pacientes.tsx"),
+      route("pacientes/:id", "routes/medico/ficha.tsx"),
+      route("pacientes/:id/atencion", "routes/medico/atencion.tsx"),
+    ]),
+    route("cie10", "routes/medico/cie10.ts"),
+    route("adjuntos/:id", "routes/medico/adjunto.ts"),
+    route("atenciones/:id/imprimir", "routes/medico/imprimir.tsx"),
+  ]),
 
   // Portal del paciente
   ...prefix("mi-cuenta", [
