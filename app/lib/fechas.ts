@@ -65,8 +65,13 @@ export function sumarDias(fecha: string, dias: number): string {
   return new Date(Date.UTC(anio, mes - 1, dia + dias)).toISOString().slice(0, 10);
 }
 
+/** "martes, 3 de noviembre" → "Martes, 3 de noviembre" (solo la primera letra). */
+function primeraMayuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export function formatearFechaHora(instante: Date, zona = ZONA_HORARIA): string {
-  return new Intl.DateTimeFormat("es-CL", {
+  const texto = new Intl.DateTimeFormat("es-CL", {
     timeZone: zona,
     weekday: "long",
     day: "numeric",
@@ -75,6 +80,7 @@ export function formatearFechaHora(instante: Date, zona = ZONA_HORARIA): string 
     minute: "2-digit",
     hourCycle: "h23",
   }).format(instante);
+  return primeraMayuscula(texto);
 }
 
 export function formatearHora(instante: Date, zona = ZONA_HORARIA): string {
@@ -92,4 +98,15 @@ export function formatearPesos(monto: number): string {
     currency: "CLP",
     maximumFractionDigits: 0,
   }).format(monto);
+}
+
+/** "2026-11-03" → "Martes, 3 de noviembre" */
+export function formatearDia(fecha: string, zona = ZONA_HORARIA): string {
+  const texto = new Intl.DateTimeFormat("es-CL", {
+    timeZone: zona,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(aInstante(fecha, "12:00", zona));
+  return primeraMayuscula(texto);
 }

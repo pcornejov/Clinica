@@ -367,6 +367,17 @@ async function main() {
       }
     }
 
+    // Lista de espera: dos pacientes esperando hora en dermatología.
+    const dermatologia = espPorSlug.get("dermatologia")!;
+    await db.insert(s.listaEspera).values(
+      [pacientes[3], pacientes[6]].map((p) => ({
+        pacienteId: p.id,
+        especialidadId: dermatologia.id,
+        desde: hoy,
+        hasta: sumarDias(hoy, 21),
+      })),
+    );
+
     console.log(`✔ ${especialidades.length} especialidades, ${medicos.length} médicos, ${pacientes.length} pacientes`);
     console.log(`✔ ${totalCitas} citas, ${totalAtenciones} atenciones registradas`);
     console.log(`\nUsuarios demo (contraseña: ${PASSWORD_DEMO})`);

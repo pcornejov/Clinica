@@ -52,7 +52,7 @@ export default function InicioMedico({ loaderData }: Route.ComponentProps) {
       <h1 className="text-2xl font-semibold text-slate-900">
         Hola, Dr(a). {medico.apellidos.split(" ")[0]}
       </h1>
-      <p className="mt-1 capitalize text-slate-500">{formatearFechaHora(new Date(ahora)).split(",")[0]}</p>
+      <p className="mt-1 text-slate-500">{formatearFechaHora(new Date(ahora)).split(",")[0]}</p>
 
       <h2 className="mt-8 text-lg font-semibold text-slate-900">Pacientes de hoy</h2>
       <div className="mt-4 space-y-3">

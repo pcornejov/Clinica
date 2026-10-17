@@ -1,4 +1,5 @@
 import { asc, eq } from "drizzle-orm";
+import { Link } from "react-router";
 import { clinica } from "~/config/clinica";
 import { especialidades, medicoEspecialidades, medicos } from "~/db/schema";
 import { contextoApp } from "~/lib/contexto";
@@ -56,6 +57,7 @@ export default function Medicos({ loaderData }: Route.ComponentProps) {
               </div>
             </div>
             {m.biografia && <p className="mt-4 text-sm text-slate-600">{m.biografia}</p>}
+            <Link to={`/agendar?modo=profesional&medico=${m.id}`} className="mt-4 inline-block text-sm font-medium text-marca-700 hover:underline">Ver horas →</Link>
           </div>
         ))}
       </div>

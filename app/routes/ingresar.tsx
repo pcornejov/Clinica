@@ -102,7 +102,7 @@ export default function Ingresar({ actionData }: Route.ComponentProps) {
           </Form>
         </div>
         <p className="mt-6 text-center text-sm text-slate-500">
-          ¿Eres paciente? Podrás ingresar con un código enviado a tu correo después de agendar.
+          ¿Eres paciente? <Link to="/ingresar/paciente" className="text-marca-700 underline">Ingresa con un código a tu correo</Link>
         </p>
       </div>
     </main>

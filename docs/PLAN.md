@@ -70,8 +70,16 @@ contenido clínico.
   deshaciendo manualmente el paso previo si algo falla. Para la Fase 3 (pagos),
   donde la atomicidad importa más, conviene pasar al driver WebSocket de Neon
   (`drizzle-orm/neon-serverless`), que sí soporta transacciones.
-- **Permisos:** los mantenedores son solo para `admin`; recepción verá solo la
-  agenda y las citas (Fase 2).
+- **Permisos:** los mantenedores son solo para `admin`; recepción ve la agenda,
+  la lista de espera y el resumen.
+- **Link de gestión de la cita:** `/cita/<id>.<firma>`, con firma HMAC del id
+  usando `BETTER_AUTH_SECRET`. No se guarda en la base de datos y no se puede
+  adivinar. Si se cambia el secreto, los links antiguos dejan de funcionar.
+- **Código de ingreso de pacientes:** mientras no se envíen correos (Fase 4),
+  se muestra en pantalla si `MOSTRAR_CODIGOS_DEMO` es `"true"` (en
+  `wrangler.jsonc`). **Debe quedar en `"false"` con pacientes reales.**
+- **Pendiente antes de producción:** proteger los formularios públicos contra
+  bots (Cloudflare Turnstile, gratis) y limitar reservas por RUT/IP.
 
 ### Decisiones y motivos
 
@@ -142,7 +150,7 @@ contacto no coincide con el registrado, la cita se marca con
 |---|---|---|
 | 0. Base | Proyecto, esquema, migraciones, datos demo, autenticación con roles, web pública inicial | ✅ Lista |
 | 1. Administración | Mantenedores de especialidades, médicos (datos, especialidades, horarios semanales, bloqueos de agenda, activar/desactivar) y usuarios del personal. Cada cambio queda en la auditoría | ✅ Lista |
-| 2. Agendamiento | Disponibilidad, reserva con RUT (invitado), búsqueda Express, grupo familiar, cuenta automática, mis citas, anular y reagendar, agenda de recepción, sobrecupo, lista de espera | Pendiente |
+| 2. Agendamiento | Disponibilidad, reserva con RUT (invitado), búsqueda por especialidad, profesional o Express, filtro Fonasa, grupo familiar, cuenta automática con ingreso por código, mis citas, link firmado para anular y reagendar, agenda diaria de recepción con sobrecupo, lista de espera con aviso automático | ✅ Lista |
 | 3. Pagos | Registro de pagos en caja (bonos, efectivo, tarjeta), Webpay y Mercado Pago opcionales, reserva temporal, devoluciones | Pendiente |
 | 4. Notificaciones | Correo y WhatsApp con botones para confirmar o cancelar | Pendiente · ⭐ demo comercial mínima |
 | 5. Ficha clínica | Portal médico, antecedentes, atenciones, CIE-10, adjuntos (R2), auditoría | Pendiente · ⭐ demo completa |

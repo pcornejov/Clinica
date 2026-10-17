@@ -31,7 +31,7 @@ Contraseña de todos: `Demo1234!`
 | `admin@example.com` | Administración (mantenedores de médicos, especialidades y usuarios) |
 | `recepcion@example.com` | Recepción (solo resumen y agenda) |
 | `camila.rojas@example.com` | Médico (los demás: `nombre.apellido@example.com`) |
-| `paciente@example.com` | Paciente |
+| `paciente@example.com` | Paciente (también puede ingresar en `/ingresar/paciente` con código) |
 
 ## Comandos
 

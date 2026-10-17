@@ -1,12 +1,13 @@
 import { createContext } from "react-router";
 import type { Db } from "~/db/client";
-import type { Auth, Rol } from "./auth.server";
+import type { Auth, BuzonDemo, Rol } from "./auth.server";
 
 export type ContextoApp = {
   env: Env;
   ctx: ExecutionContext;
   db: Db;
   auth: Auth;
+  buzonDemo: BuzonDemo;
 };
 
 /** Recursos por petición (base de datos, auth, variables de entorno). */

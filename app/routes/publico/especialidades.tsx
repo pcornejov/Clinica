@@ -1,4 +1,5 @@
 import { asc, eq } from "drizzle-orm";
+import { Link } from "react-router";
 import { clinica } from "~/config/clinica";
 import { especialidades } from "~/db/schema";
 import { contextoApp } from "~/lib/contexto";
@@ -24,8 +25,7 @@ export default function Especialidades({ loaderData }: Route.ComponentProps) {
     <div className="mx-auto max-w-6xl px-4 py-12">
       <h1 className="text-3xl font-semibold text-slate-900">Especialidades</h1>
       <p className="mt-2 text-slate-600">
-        Elige una especialidad para ver los médicos disponibles. La reserva en línea estará
-        disponible próximamente.
+        Elige una especialidad para ver las horas disponibles.
       </p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {loaderData.especialidades.map((e) => (
@@ -37,7 +37,10 @@ export default function Especialidades({ loaderData }: Route.ComponentProps) {
               </span>
             </div>
             <p className="mt-2 text-slate-600">{e.descripcion}</p>
-            <p className="mt-3 text-sm text-slate-400">Consulta de {e.duracionMinutos} minutos</p>
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-slate-400">Consulta de {e.duracionMinutos} minutos</p>
+              <Link to={`/agendar?especialidad=${e.id}`} className="rounded-lg bg-marca-600 px-4 py-2 text-sm font-medium text-white hover:bg-marca-700">Ver horas</Link>
+            </div>
           </div>
         ))}
       </div>

@@ -8,7 +8,10 @@
   // Cron: recordatorios y liberación de reservas vencidas (Fase 3/4).
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
-    "APP_URL": "http://localhost:5173"
+    "APP_URL": "http://localhost:5173",
+    // Muestra en pantalla el código de ingreso de pacientes mientras no se
+    // envían correos (Fase 4). Poner en "false" antes de usarlo con pacientes reales.
+    "MOSTRAR_CODIGOS_DEMO": "true"
   }
   // Secretos (no van aquí): DATABASE_URL, BETTER_AUTH_SECRET.
   // Local: archivo .dev.vars. Producción: `npx wrangler secret put <NOMBRE>`.

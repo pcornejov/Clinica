@@ -12,7 +12,8 @@ export default {
   async fetch(request, env, ctx) {
     const { db, cerrar } = crearDb(env.DATABASE_URL);
     const context = new RouterContextProvider();
-    context.set(contextoApp, { env, ctx, db, auth: crearAuth(env, db) });
+    const buzonDemo = {};
+    context.set(contextoApp, { env, ctx, db, auth: crearAuth(env, db, buzonDemo), buzonDemo });
     try {
       return await requestHandler(request, context);
     } finally {

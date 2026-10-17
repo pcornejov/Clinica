@@ -24,12 +24,11 @@ export default function LayoutPublico() {
                 {e.texto}
               </NavLink>
             ))}
-            <Link to="/ingresar" className="rounded-md px-2 py-2 text-slate-600 hover:text-slate-900 sm:px-3">
-              Ingresar
+            <Link to="/ingresar/paciente" className="rounded-md px-2 py-2 text-slate-600 hover:text-slate-900 sm:px-3">
+              Mi cuenta
             </Link>
-            {/* El flujo de agendamiento llega en la Fase 2. */}
             <Link
-              to="/especialidades"
+              to="/agendar"
               className="ml-1 whitespace-nowrap rounded-lg bg-marca-600 px-3 py-2 font-medium sm:ml-2 sm:px-4 text-white hover:bg-marca-700"
             >
               Agendar hora

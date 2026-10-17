@@ -21,3 +21,11 @@ describe("fechas", () => {
     expect(sumarDias("2026-10-30", 3)).toBe("2026-11-02");
   });
 });
+
+describe("formato", () => {
+  it("pone mayúscula solo a la primera letra", async () => {
+    const { formatearDia, formatearFechaHora } = await import("./fechas");
+    expect(formatearDia("2026-11-03")).toBe("Martes, 3 de noviembre");
+    expect(formatearFechaHora(new Date("2026-11-03T12:30:00Z"))).toBe("Martes, 3 de noviembre, 09:30");
+  });
+});

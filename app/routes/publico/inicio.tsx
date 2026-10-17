@@ -34,7 +34,7 @@ export default function Inicio({ loaderData }: Route.ComponentProps) {
           <p className="mt-5 max-w-xl text-lg text-slate-600">{clinica.descripcion}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              to="/especialidades"
+              to="/agendar"
               className="rounded-lg bg-marca-600 px-5 py-3 font-medium text-white hover:bg-marca-700"
             >
               Agendar hora
@@ -53,11 +53,11 @@ export default function Inicio({ loaderData }: Route.ComponentProps) {
         <h2 className="text-2xl font-semibold text-slate-900">Especialidades</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {loaderData.especialidades.map((e) => (
-            <div key={e.id} className="rounded-xl border border-slate-200 bg-white p-5">
+            <Link key={e.id} to={`/agendar?especialidad=${e.id}`} className="rounded-xl border border-slate-200 bg-white p-5 hover:border-marca-500">
               <p className="font-medium text-slate-900">{e.nombre}</p>
               <p className="mt-1 line-clamp-2 text-sm text-slate-500">{e.descripcion}</p>
-              <p className="mt-3 text-sm text-marca-700">Desde {formatearPesos(e.precio)}</p>
-            </div>
+              <p className="mt-3 text-sm text-marca-700">{formatearPesos(e.precio)} · Agendar →</p>
+            </Link>
           ))}
         </div>
       </section>

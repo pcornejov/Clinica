@@ -6,10 +6,16 @@ export default [
     index("routes/publico/inicio.tsx"),
     route("especialidades", "routes/publico/especialidades.tsx"),
     route("medicos", "routes/publico/medicos.tsx"),
+    route("agendar", "routes/publico/agendar.tsx"),
+    route("agendar/confirmar", "routes/publico/agendar-confirmar.tsx"),
+    route("agendar/lista-espera", "routes/publico/lista-espera.tsx"),
+    route("cita/:token", "routes/publico/cita.tsx"),
+    route("cita/:token/reagendar", "routes/publico/cita-reagendar.tsx"),
   ]),
 
   // Sesión
   route("ingresar", "routes/ingresar.tsx"),
+  route("ingresar/paciente", "routes/ingresar-paciente.tsx"),
   route("salir", "routes/salir.tsx"),
   route("api/auth/*", "routes/api.auth.ts"),
 
@@ -17,12 +23,15 @@ export default [
   ...prefix("admin", [
     layout("routes/admin/layout.tsx", [
       index("routes/admin/inicio.tsx"),
+      route("agenda", "routes/admin/agenda.tsx"),
+      route("lista-espera", "routes/admin/lista-espera.tsx"),
       route("especialidades", "routes/admin/especialidades.tsx"),
       route("medicos", "routes/admin/medicos.tsx"),
       route("medicos/nuevo", "routes/admin/medico-nuevo.tsx"),
       route("medicos/:id", "routes/admin/medico.tsx"),
       route("usuarios", "routes/admin/usuarios.tsx"),
     ]),
+    route("pacientes/buscar", "routes/admin/pacientes-buscar.ts"),
   ]),
 
   // Portal médico

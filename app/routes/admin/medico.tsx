@@ -296,7 +296,7 @@ export default function MedicoDetalle({ loaderData, actionData }: Route.Componen
               {bloqueos.map((b) => (
                 <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
                   <span>
-                    <span className="capitalize">{formatearFechaHora(new Date(b.inicio))}</span> → <span className="capitalize">{formatearFechaHora(new Date(b.fin))}</span>
+                    <span>{formatearFechaHora(new Date(b.inicio))}</span> → <span>{formatearFechaHora(new Date(b.fin))}</span>
                     {b.motivo && <span className="text-slate-400"> · {b.motivo}</span>}
                   </span>
                   <Form method="post">
