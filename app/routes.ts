@@ -14,7 +14,16 @@ export default [
   route("api/auth/*", "routes/api.auth.ts"),
 
   // Backoffice (administración y recepción)
-  ...prefix("admin", [layout("routes/admin/layout.tsx", [index("routes/admin/inicio.tsx")])]),
+  ...prefix("admin", [
+    layout("routes/admin/layout.tsx", [
+      index("routes/admin/inicio.tsx"),
+      route("especialidades", "routes/admin/especialidades.tsx"),
+      route("medicos", "routes/admin/medicos.tsx"),
+      route("medicos/nuevo", "routes/admin/medico-nuevo.tsx"),
+      route("medicos/:id", "routes/admin/medico.tsx"),
+      route("usuarios", "routes/admin/usuarios.tsx"),
+    ]),
+  ]),
 
   // Portal médico
   ...prefix("medico", [layout("routes/medico/layout.tsx", [index("routes/medico/inicio.tsx")])]),

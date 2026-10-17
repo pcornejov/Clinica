@@ -63,6 +63,16 @@ contenido clínico.
 | WhatsApp | WhatsApp Cloud API (Meta) |
 | Pagos | Webpay Plus (Transbank) y Mercado Pago, más pago en la clínica |
 
+### Notas técnicas
+
+- **Sin transacciones con Neon por HTTP.** Los pasos que deben ser atómicos
+  (p. ej. crear el usuario de un médico junto con su ficha) se resuelven hoy
+  deshaciendo manualmente el paso previo si algo falla. Para la Fase 3 (pagos),
+  donde la atomicidad importa más, conviene pasar al driver WebSocket de Neon
+  (`drizzle-orm/neon-serverless`), que sí soporta transacciones.
+- **Permisos:** los mantenedores son solo para `admin`; recepción verá solo la
+  agenda y las citas (Fase 2).
+
 ### Decisiones y motivos
 
 - **React Router en vez de Next.js:** Next.js en Workers excede con facilidad
@@ -131,7 +141,7 @@ contacto no coincide con el registrado, la cita se marca con
 | Fase | Contenido | Estado |
 |---|---|---|
 | 0. Base | Proyecto, esquema, migraciones, datos demo, autenticación con roles, web pública inicial | ✅ Lista |
-| 1. Administración | CRUD de especialidades, médicos, horarios, bloqueos y usuarios | Pendiente |
+| 1. Administración | Mantenedores de especialidades, médicos (datos, especialidades, horarios semanales, bloqueos de agenda, activar/desactivar) y usuarios del personal. Cada cambio queda en la auditoría | ✅ Lista |
 | 2. Agendamiento | Disponibilidad, reserva con RUT (invitado), búsqueda Express, grupo familiar, cuenta automática, mis citas, anular y reagendar, agenda de recepción, sobrecupo, lista de espera | Pendiente |
 | 3. Pagos | Registro de pagos en caja (bonos, efectivo, tarjeta), Webpay y Mercado Pago opcionales, reserva temporal, devoluciones | Pendiente |
 | 4. Notificaciones | Correo y WhatsApp con botones para confirmar o cancelar | Pendiente · ⭐ demo comercial mínima |

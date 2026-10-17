@@ -10,5 +10,14 @@ export function loader({ context }: Route.LoaderArgs) {
 }
 
 export default function LayoutAdmin({ loaderData }: Route.ComponentProps) {
-  return <Panel usuario={loaderData.usuario} enlaces={[{ a: "/admin", texto: "Resumen" }]} />;
+  const { usuario } = loaderData;
+  const enlaces = [{ a: "/admin", texto: "Resumen" }];
+  if (usuario.role === "admin") {
+    enlaces.push(
+      { a: "/admin/medicos", texto: "Médicos" },
+      { a: "/admin/especialidades", texto: "Especialidades" },
+      { a: "/admin/usuarios", texto: "Usuarios" },
+    );
+  }
+  return <Panel usuario={usuario} enlaces={enlaces} />;
 }

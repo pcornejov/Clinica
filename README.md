@@ -28,8 +28,8 @@ Contraseña de todos: `Demo1234!`
 
 | Correo | Rol |
 |---|---|
-| `admin@example.com` | Administración |
-| `recepcion@example.com` | Recepción |
+| `admin@example.com` | Administración (mantenedores de médicos, especialidades y usuarios) |
+| `recepcion@example.com` | Recepción (solo resumen y agenda) |
 | `camila.rojas@example.com` | Médico (los demás: `nombre.apellido@example.com`) |
 | `paciente@example.com` | Paciente |
 
