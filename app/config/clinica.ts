@@ -1,8 +1,16 @@
+import type { ConfigEditable, ConfigGuardada } from "./esquema";
+
 /**
- * Configuración de la clínica. Todo lo que cambia entre clientes debería
- * vivir aquí (y más adelante en la base de datos, Fase 7), no en el código.
+ * Configuración de la clínica. Lo que cambia entre clientes se edita desde
+ * Panel → Configuración (Fase 7) y se guarda en la base de datos; estos son
+ * los valores iniciales.
  */
-export const clinica = {
+export type ConfigClinica = ConfigEditable & {
+  /** Idioma de las plantillas de WhatsApp aprobadas en Meta (no es editable). */
+  avisos: { idiomaWhatsapp: string };
+};
+
+export const CONFIG_POR_DEFECTO: ConfigClinica = {
   nombre: "Centro Médico Demo",
   eslogan: "Atención cercana, agenda simple",
   descripcion:
@@ -12,6 +20,8 @@ export const clinica = {
   whatsapp: "+56 9 1234 5678",
   email: "contacto@example.com",
   horarioAtencion: "Lunes a viernes de 08:00 a 20:00 · Sábados de 09:00 a 14:00",
+  logoUrl: "",
+  colorTono: 200,
 
   modulos: {
     pagoOnline: true,
@@ -33,7 +43,29 @@ export const clinica = {
   },
 
   avisos: {
-    /** Idioma de las plantillas de WhatsApp aprobadas en Meta. */
     idiomaWhatsapp: "es",
   },
-} as const;
+};
+
+/**
+ * Configuración vigente. Es una sola por instalación, así que vive como un
+ * objeto compartido: el servidor lo refresca desde la base de datos
+ * (`cargarConfig`) y el navegador lo hidrata con los datos del loader raíz.
+ * Se modifica solo con `aplicarConfig`.
+ */
+export const clinica: ConfigClinica = structuredClone(CONFIG_POR_DEFECTO);
+
+/** "correo y WhatsApp" o solo "correo", según el módulo activo. */
+export function canalesAviso(): string {
+  return clinica.modulos.whatsapp ? "correo y WhatsApp" : "correo";
+}
+
+/** Deja vigente la configuración por defecto más lo guardado (que puede estar incompleto). */
+export function aplicarConfig(guardada: ConfigGuardada = {}): void {
+  const base = structuredClone(CONFIG_POR_DEFECTO);
+  Object.assign(clinica, base, guardada, {
+    modulos: { ...base.modulos, ...guardada.modulos },
+    reglas: { ...base.reglas, ...guardada.reglas },
+    avisos: base.avisos,
+  });
+}

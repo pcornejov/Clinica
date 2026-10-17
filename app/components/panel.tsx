@@ -22,7 +22,8 @@ export function Panel({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-6">
-            <a href="/" className="font-semibold text-marca-700">
+            <a href="/" className="flex items-center gap-2 font-semibold text-marca-700">
+              {clinica.logoUrl && <img src={clinica.logoUrl} alt="" className="h-7 w-auto" />}
               {clinica.nombre}
             </a>
             <nav className="flex gap-1 text-sm">

@@ -5,9 +5,16 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 import type { Route } from "./+types/root";
+import { aplicarConfig, clinica } from "./config/clinica";
 import "./app.css";
+
+/** La configuración de la clínica viaja al navegador para que ambos lados muestren lo mismo. */
+export function loader() {
+  return { config: structuredClone(clinica) };
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
@@ -20,8 +27,11 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  // Se aplica aquí, antes de dibujar el resto: así todas las pantallas ven la configuración vigente.
+  const datos = useRouteLoaderData<typeof loader>("root");
+  if (datos) aplicarConfig(datos.config);
   return (
-    <html lang="es-CL">
+    <html lang="es-CL" style={{ "--marca-tono": clinica.colorTono } as React.CSSProperties}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />

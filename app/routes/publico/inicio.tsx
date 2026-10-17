@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { Link } from "react-router";
-import { clinica } from "~/config/clinica";
+import { canalesAviso, clinica } from "~/config/clinica";
 import { especialidades } from "~/db/schema";
 import { contextoApp } from "~/lib/contexto";
 import { formatearPesos } from "~/lib/fechas";
@@ -66,7 +66,7 @@ export default function Inicio({ loaderData }: Route.ComponentProps) {
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:grid-cols-3">
           {[
             ["Agenda en línea", "Elige especialidad, médico y horario, las 24 horas del día."],
-            ["Recordatorios", "Te avisamos por correo y WhatsApp antes de tu hora."],
+            ["Recordatorios", `Te avisamos por ${canalesAviso()} antes de tu hora.`],
             ["Paga como prefieras", "En línea con Webpay o Mercado Pago, o directamente en la clínica."],
           ].map(([titulo, texto]) => (
             <div key={titulo}>

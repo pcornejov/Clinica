@@ -5,7 +5,7 @@
 //      npm run e2e -- fase5   (solo una)
 import { execSync, spawnSync } from "node:child_process";
 
-const todas = ["fase1", "fase2", "fase34", "fase5"];
+const todas = ["fase1", "fase2", "fase34", "fase5", "fase7"];
 const elegidas = process.argv.slice(2).length ? process.argv.slice(2) : todas;
 let fallidas = 0;
 

@@ -36,6 +36,13 @@
       "when": 1792261090079,
       "tag": "0004_diagnosticos_inmutables",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792266676702,
+      "tag": "0005_configuracion_clinica",
+      "breakpoints": true
     }
   ]
 }

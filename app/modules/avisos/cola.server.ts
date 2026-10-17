@@ -85,6 +85,7 @@ async function enviarUna(db: Db, env: Env, n: Notificacion): Promise<"enviada" |
     return "enviada";
   }
 
+  if (!clinica.modulos.whatsapp) return omitir("El módulo de WhatsApp está desactivado");
   // La plantilla de lista de espera no está aprobada en Meta (la toma como Marketing).
   if (n.tipo === "lista_espera") return omitir("La lista de espera avisa solo por correo");
   // WhatsApp exige consentimiento explícito (Ley 21.719).

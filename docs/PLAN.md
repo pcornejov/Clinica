@@ -33,6 +33,19 @@ Detalle en [INVESTIGACION.md](INVESTIGACION.md).
 | WhatsApp | Mensajes mínimos (fecha, hora, profesional), sin diagnósticos. Se guarda el consentimiento de contacto (Ley 21.719) |
 | Anular y reagendar | **Autoservicio** desde el link del correo o los botones de WhatsApp, sin llamar. Es el reclamo más repetido contra las clínicas grandes |
 
+## Personalización por clínica (Fase 7)
+
+Decisiones: se edita **marca, reglas y módulos**; el **logo** es un enlace https (subir
+archivos queda para cuando R2 esté habilitado); solo **administración** puede cambiarlo.
+
+- Una fila en `configuracion_clinica` (JSON); lo que falta se completa con los valores por
+  defecto de `app/config/clinica.ts`.
+- Desactivar un módulo **no borra datos**, solo oculta la función. Con WhatsApp apagado no se
+  programan ni envían avisos por ese canal y se quita de los textos. Con la ficha clínica
+  apagada, el médico ve solo su agenda.
+- Cada instancia del Worker relee la configuración como máximo cada 30 s, y quien guarda la ve
+  al instante.
+
 ## Módulos
 
 | Módulo | Usuarios | Funciones |
@@ -169,7 +182,7 @@ contacto no coincide con el registrado, la cita se marca con
 | 4. Notificaciones | Confirmación, recordatorio 24 h, cambio, anulación y hora liberada por correo (Resend) y WhatsApp (Meta), con botones Confirmar/Anular; cola con reintentos sin duplicados; panel de avisos; modo simulado sin credenciales | ✅ Lista · ⭐ demo comercial mínima |
 | 5. Ficha clínica | Agenda del médico con alergias a la vista, ficha con antecedentes, historial de toda la clínica, atención con signos vitales, IMC y diagnósticos CIE-10, borrador → firma (inmutable) → corrección vinculada, indicaciones imprimibles, exámenes en R2, acceso solo de médicos tratantes o acceso excepcional con motivo, auditoría de accesos | ✅ Lista · ⭐ demo completa |
 | 6. Bot de WhatsApp | Agendamiento por conversación | Pendiente |
-| 7. Personalización | Marca, módulos y reglas configurables desde el panel | Pendiente |
+| 7. Personalización | Panel **Configuración** (solo admin): datos de contacto, eslogan, logo por URL, color de marca (tono), reglas de agenda (anticipación, días visibles, devolución, reserva de pago, recordatorio) y módulos (pago en línea, WhatsApp, ficha clínica). Se guarda en la base y se aplica de inmediato; cada cambio queda en la auditoría | ✅ Lista |
 
 ### Guion de la demo
 1. Un paciente agenda desde el celular y paga con Webpay (modo prueba).

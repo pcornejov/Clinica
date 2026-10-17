@@ -3,7 +3,7 @@ import { useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { z } from "zod";
 import { Aviso, Campo, CampoSelect, CampoTexto } from "~/components/formulario";
-import { clinica } from "~/config/clinica";
+import { canalesAviso, clinica } from "~/config/clinica";
 import { especialidades, medicos, pacientes } from "~/db/schema";
 import { contextoApp, enSegundoPlano } from "~/lib/contexto";
 import { fechaLocal, formatearFechaHora, formatearPesos } from "~/lib/fechas";
@@ -278,7 +278,7 @@ export default function Confirmar({ loaderData, actionData }: Route.ComponentPro
           <label className="flex items-start gap-3 text-sm text-slate-700">
             <input type="checkbox" name="consentimiento" className="mt-0.5 h-4 w-4 accent-marca-600" required />
             <span>
-              Acepto recibir la confirmación y recordatorios de mi hora por correo y WhatsApp.
+              Acepto recibir la confirmación y recordatorios de mi hora por {canalesAviso()}.
               Los mensajes no incluyen información clínica.
             </span>
           </label>

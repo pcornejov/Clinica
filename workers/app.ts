@@ -3,6 +3,7 @@ import { crearDb } from "../app/db/client";
 import { crearAuth } from "../app/lib/auth.server";
 import { contextoApp, type ContextoApp } from "../app/lib/contexto";
 import { procesarCola } from "../app/modules/avisos/cola.server";
+import { cargarConfig } from "../app/modules/configuracion.server";
 import { liberarReservasVencidas } from "../app/modules/pagos.server";
 
 const requestHandler = createRequestHandler(
@@ -18,6 +19,7 @@ export default {
     const app: ContextoApp = { env, ctx, db, auth: crearAuth(env, db, buzonDemo), buzonDemo, tareas: [] };
     context.set(contextoApp, app);
     try {
+      await cargarConfig(db);
       return await requestHandler(request, context);
     } finally {
       // La conexión se cierra cuando terminan las tareas en segundo plano.
@@ -30,6 +32,7 @@ export default {
     const { db, cerrar } = crearDb(env.DATABASE_URL);
     const tarea = (async () => {
       try {
+        await cargarConfig(db, true);
         const liberadas = await liberarReservasVencidas(db);
         const avisos = await procesarCola(db, env);
         console.log(`cron ${controller.cron}: ${liberadas} reservas liberadas, avisos`, avisos);

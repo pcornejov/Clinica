@@ -27,7 +27,7 @@ avisos por correo y WhatsApp.
 | 4 | Avisos por correo (Resend) y WhatsApp (Meta), con botones de confirmar/anular | ✅ |
 | 5 | Ficha clínica: atenciones, CIE-10, firma inmutable, correcciones, adjuntos R2, auditoría | ✅ |
 | 6 | Bot de WhatsApp para agendar conversando | Pendiente |
-| 7 | Personalización por clínica desde el panel (marca, módulos, reglas) | Pendiente |
+| 7 | Personalización por clínica: panel Configuración (marca, reglas, módulos) | ✅ |
 
 **Pendientes antes de usarlo con pacientes reales**
 - Publicar: Neon + Cloudflare. Los pasos están en el README.
@@ -94,7 +94,7 @@ el código se muestra en pantalla.
 | `npm run db:reset` | Borra todo, migra y carga los datos demo (solo localhost) |
 | `npm run preview:e2e` | Compila y sirve en :4173 para las pruebas e2e |
 | `npm run e2e` | Pruebas de punta a punta (otra terminal con `preview:e2e` corriendo) |
-| `npm run e2e -- fase5` | Una sola suite |
+| `npm run e2e -- fase5` | Una sola suite (`fase1`, `fase2`, `fase34`, `fase5`, `fase7`) |
 | `npm run deploy` | Publica en Cloudflare |
 
 Las pruebas e2e (`e2e/*.mjs`) usan Playwright (`playwright-core`). La primera
@@ -107,7 +107,8 @@ vez, instala Chromium con `npx playwright-core install chromium`, o define
 
 ```
 app/
-  config/clinica.ts        Marca, módulos y reglas (anticipación, devolución, etc.)
+  config/clinica.ts        Valores por defecto y el objeto vigente `clinica` (ver "Configuración")
+  config/esquema.ts        Validación Zod de la configuración editable (compartida)
   db/schema.ts             Esquema Drizzle (fuente de verdad)
   db/client.ts             Conexión (Neon HTTP o postgres.js)
   lib/                     RUT, fechas (America/Santiago), teléfono, auth, sesión,
@@ -120,6 +121,7 @@ app/
     avisos/                Plantillas, programación, cola de envío, respuestas WhatsApp
     fichas.server.ts       Acceso a fichas, historial, atenciones, CIE-10
     pacientes.server.ts    Alta/búsqueda de pacientes, cuentas
+    configuracion.server.ts  Cargar y guardar la configuración de la clínica
   routes/
     publico/               Web pública, agendar, cita (link de gestión), lista de espera
     pago/                  Webpay: ir, retorno, simulador
@@ -171,6 +173,21 @@ e2e/                       Pruebas de punta a punta
 - **Comentarios**: breves, en español, explicando el porqué. Los de módulos y
   funciones públicas van con `/** */`.
 
+## Configuración de la clínica (Fase 7)
+
+- **`clinica`** (`app/config/clinica.ts`) es un objeto único que se **rellena desde la base**; se
+  importa igual que antes. Lo cambia solo `aplicarConfig`. Hay una clínica por instalación, así que
+  ser global es correcto.
+- En el servidor lo refresca `cargarConfig(db)` al inicio de cada petición y del cron
+  (`workers/app.ts`), como máximo cada 30 s por instancia. `guardarConfig` guarda y aplica al instante.
+- En el navegador lo hidrata el loader raíz: `Layout` de `root.tsx` llama a `aplicarConfig` **antes**
+  de dibujar. Por eso los componentes pueden usar `clinica.nombre` directamente.
+- El color de marca es un tono (0–360) en `--marca-tono`, que `app.css` usa para toda la escala `marca-*`.
+- Para campos nuevos: agrégalos a `esquema.ts` y a `CONFIG_POR_DEFECTO`, y al formulario de
+  `routes/admin/configuracion.tsx`. Lo guardado puede estar incompleto: se completa con los defectos.
+- **Módulos**: `modulos.whatsapp` corta la programación y el envío del canal y los textos (usa
+  `canalesAviso()`); `modulos.fichaClinica` limita al médico a su agenda (`routes/medico/layout.tsx`).
+
 ## Reglas de negocio y seguridad que no se deben romper
 
 - **Doble agendamiento**: la restricción `EXCLUDE` de `citas_sin_superposicion`
@@ -206,6 +223,17 @@ e2e/                       Pruebas de punta a punta
   - Los adjuntos se validan por sus bytes (`tipoReal`) y su descarga queda auditada.
 
 ## Trampas conocidas
+
+- **Middlewares y `pathname`**: en las navegaciones desde el navegador la ruta llega como
+  `/medico.data`. Si comparas rutas en un middleware, quita el sufijo `.data` (si no, puede
+  redirigir en bucle).
+- **e2e y la caché de configuración**: si reinicias la base mientras el servidor sigue corriendo, este
+  conserva la configuración anterior hasta 30 s. El runner (`npm run e2e`) lo hace entre suites; si
+  una suite falla al inicio, espera 30 s y repite.
+- **e2e sin Docker**: se puede usar Postgres con `podman run` y un `psql` de envoltorio que llame a
+  `podman exec`. `CHROMIUM_PATH` apunta al Chromium ya instalado si Playwright pide otra versión.
+- **R2**: la ficha solo ofrece subir archivos si existe el binding `ARCHIVOS`. Con el binding
+  comentado (demo sin R2), `fase5` falla; descoméntalo para correr esa suite.
 
 - React Router v8: el middleware siempre está activo y `context` es un
   `RouterContextProvider`. Los tipos de cada ruta salen de `./+types/<archivo>`,

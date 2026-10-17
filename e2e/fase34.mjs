@@ -171,14 +171,15 @@ try {
   const post = await ctx.request.post(`${B}/api/whatsapp`, { data: { entry: [] } });
   ok(verif.status() === 403 && post.status() === 401, "el webhook de WhatsApp rechaza verificaciones y mensajes sin firma válida");
 
-  // ── 9. Lista de espera: el aviso de hora liberada sale por ambos canales
+  // ── 9. Lista de espera: el aviso de hora liberada sale solo por correo (la plantilla de WhatsApp no está aprobada en Meta)
   const derma = sql(`select id from especialidades where slug='dermatologia'`);
   indice = 0;
   await p.click("button:has-text('Salir')"); await p.waitForLoadState("networkidle");
   await reservar({ n: 22000009, pago: "clinica", especialidad: "Dermatología" });
   await p.click("button:has-text('Confirmar reserva')"); await p.waitForURL(/\/cita\//);
   await p.click("summary:has-text('Anular hora')"); await p.click("button:has-text('Sí, anular mi hora')");
-  ok(await esperarSql(`select count(*) from notificaciones where tipo='lista_espera' and estado='enviada'`, "2"), "la persona en lista de espera recibe el aviso por correo y WhatsApp");
+  ok(await esperarSql(`select count(*) from notificaciones where tipo='lista_espera' and canal='email' and estado='enviada'`, "1"), "la persona en lista de espera recibe el aviso por correo");
+  ok(await esperarSql(`select count(*) from notificaciones where tipo='lista_espera' and canal='whatsapp' and estado='omitida'`, "1"), "el aviso de lista de espera por WhatsApp se omite, no falla");
 } catch (e) {
   fallos++; console.log("✘ EXCEPCIÓN: " + e.message.split("\n").slice(0, 3).join(" | "));
   await p.screenshot({ path: captura("f34-error.png"), fullPage: true });

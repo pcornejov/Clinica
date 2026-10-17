@@ -38,6 +38,7 @@ export default [
       route("medicos/nuevo", "routes/admin/medico-nuevo.tsx"),
       route("medicos/:id", "routes/admin/medico.tsx"),
       route("usuarios", "routes/admin/usuarios.tsx"),
+      route("configuracion", "routes/admin/configuracion.tsx"),
       route("auditoria", "routes/admin/auditoria.tsx"),
     ]),
     route("pacientes/buscar", "routes/admin/pacientes-buscar.ts"),

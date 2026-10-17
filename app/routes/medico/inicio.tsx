@@ -2,6 +2,7 @@ import { and, asc, eq, gte, inArray, lt, ne } from "drizzle-orm";
 import { Link, useSearchParams } from "react-router";
 import { z } from "zod";
 import { estiloEstadoCita, textoEstadoCita } from "~/components/panel";
+import { clinica } from "~/config/clinica";
 import { atenciones, citas, especialidades, fichasClinicas, pacientes } from "~/db/schema";
 import { contextoApp, contextoUsuario } from "~/lib/contexto";
 import { aInstante, fechaLocal, formatearDia, formatearHora, sumarDias } from "~/lib/fechas";
@@ -126,16 +127,20 @@ export default function InicioMedico({ loaderData }: Route.ComponentProps) {
             </div>
             <div className="flex items-center gap-3">
               <span className={`rounded-full px-2.5 py-1 text-xs ${estiloEstadoCita[c.estado]}`}>{textoEstadoCita[c.estado]}</span>
-              <Link to={`/medico/pacientes/${c.pacienteId}`} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Ficha</Link>
-              {c.atencion === "firmada" ? (
-                <span className="text-sm text-emerald-700">Atención registrada</span>
-              ) : (
-                <Link
-                  to={`/medico/pacientes/${c.pacienteId}/atencion?cita=${c.id}`}
-                  className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-700"
-                >
-                  {c.atencion === "borrador" ? "Continuar atención" : "Atender"}
-                </Link>
+              {clinica.modulos.fichaClinica && (
+                <>
+                  <Link to={`/medico/pacientes/${c.pacienteId}`} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Ficha</Link>
+                  {c.atencion === "firmada" ? (
+                    <span className="text-sm text-emerald-700">Atención registrada</span>
+                  ) : (
+                    <Link
+                      to={`/medico/pacientes/${c.pacienteId}/atencion?cita=${c.id}`}
+                      className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-700"
+                    >
+                      {c.atencion === "borrador" ? "Continuar atención" : "Atender"}
+                    </Link>
+                  )}
+                </>
               )}
             </div>
           </div>

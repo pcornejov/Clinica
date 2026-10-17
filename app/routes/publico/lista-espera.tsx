@@ -2,7 +2,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { data, Form, Link, useNavigation } from "react-router";
 import { z } from "zod";
 import { Aviso, Campo, CampoSelect } from "~/components/formulario";
-import { clinica } from "~/config/clinica";
+import { canalesAviso, clinica } from "~/config/clinica";
 import { especialidades, listaEspera, medicos } from "~/db/schema";
 import { contextoApp } from "~/lib/contexto";
 import { fechaLocal, sumarDias } from "~/lib/fechas";
@@ -93,7 +93,7 @@ export default function ListaEspera({ loaderData, actionData }: Route.ComponentP
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold text-slate-900">Quedaste en la lista de espera</h1>
-        <p className="mt-3 text-slate-600">Si se libera una hora en las fechas que indicaste, te avisaremos por correo y WhatsApp.</p>
+        <p className="mt-3 text-slate-600">Si se libera una hora en las fechas que indicaste, te avisaremos por {canalesAviso()}.</p>
         <Link to="/" className="mt-6 inline-block text-marca-700 underline">Volver al inicio</Link>
       </div>
     );
@@ -130,7 +130,7 @@ export default function ListaEspera({ loaderData, actionData }: Route.ComponentP
         </div>
         <label className="flex items-start gap-3 text-sm text-slate-700">
           <input type="checkbox" name="consentimiento" className="mt-0.5 h-4 w-4 accent-marca-600" required />
-          <span>Acepto que me contacten por correo y WhatsApp para ofrecerme una hora.</span>
+          <span>Acepto que me contacten por {canalesAviso()} para ofrecerme una hora.</span>
         </label>
         {errores.consentimiento && <Aviso tipo="error">{errores.consentimiento}</Aviso>}
         <button disabled={enviando} className="w-full rounded-lg bg-marca-600 px-5 py-3 font-medium text-white hover:bg-marca-700 disabled:opacity-60">

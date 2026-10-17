@@ -23,6 +23,7 @@ export default function LayoutAdmin({ loaderData }: Route.ComponentProps) {
       { a: "/admin/medicos", texto: "Médicos" },
       { a: "/admin/especialidades", texto: "Especialidades" },
       { a: "/admin/usuarios", texto: "Usuarios" },
+      { a: "/admin/configuracion", texto: "Configuración" },
       { a: "/admin/auditoria", texto: "Auditoría" },
     );
   }

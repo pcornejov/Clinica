@@ -6,7 +6,8 @@ export default function LayoutPublico() {
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <Link to="/" className="text-lg font-semibold text-marca-700">
+          <Link to="/" className="flex items-center gap-3 text-lg font-semibold text-marca-700">
+            {clinica.logoUrl && <img src={clinica.logoUrl} alt="" className="h-9 w-auto" />}
             {clinica.nombre}
           </Link>
           <nav className="flex flex-wrap items-center gap-x-1 text-sm">
@@ -53,7 +54,7 @@ export default function LayoutPublico() {
           </div>
           <div>
             <p>Teléfono: {clinica.telefono}</p>
-            <p>WhatsApp: {clinica.whatsapp}</p>
+            {clinica.modulos.whatsapp && <p>WhatsApp: {clinica.whatsapp}</p>}
             <p>{clinica.email}</p>
           </div>
         </div>

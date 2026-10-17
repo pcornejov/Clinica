@@ -9,6 +9,7 @@ type Tipo = (typeof notificaciones.tipo.enumValues)[number];
 /** Programa (o reprograma) un aviso. `reemplazar` vuelve a dejarlo pendiente si ya existía. */
 async function programar(db: Db, cita: { id: string; pacienteId: string }, tipo: Tipo, cuando: Date, reemplazar: boolean) {
   for (const canal of CANALES) {
+    if (canal === "whatsapp" && !clinica.modulos.whatsapp) continue;
     const fila = { citaId: cita.id, pacienteId: cita.pacienteId, canal, tipo, programadaPara: cuando };
     const insercion = db.insert(notificaciones).values(fila);
     if (reemplazar) {

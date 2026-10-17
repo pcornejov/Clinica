@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   bigserial,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -547,6 +548,20 @@ export const auditoria = pgTable(
     index("auditoria_entidad_idx").on(t.entidad, t.entidadId),
     index("auditoria_user_idx").on(t.userId, t.creadoEn),
   ],
+);
+
+// ─── Configuración ──────────────────────────────────────────────────────────
+
+/** Configuración editable de la clínica (una sola fila). Ver app/config/esquema.ts. */
+export const configuracionClinica = pgTable(
+  "configuracion_clinica",
+  {
+    id: smallint("id").primaryKey().default(1),
+    datos: jsonb("datos").$type<Record<string, unknown>>().notNull(),
+    actualizadoPor: text("actualizado_por").references(() => user.id, { onDelete: "set null" }),
+    actualizadoEn: actualizadoEn(),
+  },
+  (t) => [check("configuracion_clinica_unica", sql`${t.id} = 1`)],
 );
 
 // ─── Tipos derivados ────────────────────────────────────────────────────────
