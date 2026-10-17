@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "clinica",
+  "main": "./workers/app.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Cron: recordatorios y liberación de reservas vencidas (Fase 3/4).
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": {
+    "APP_URL": "http://localhost:5173"
+  }
+  // Secretos (no van aquí): DATABASE_URL, BETTER_AUTH_SECRET.
+  // Local: archivo .dev.vars. Producción: `npx wrangler secret put <NOMBRE>`.
+}

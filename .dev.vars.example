@@ -1,0 +1,6 @@
+# Copiar a .dev.vars (no se sube al repo).
+# Neon: postgresql://usuario:clave@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require
+# Local: postgresql://postgres:postgres@localhost:5432/clinica
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/clinica
+# Generar con: openssl rand -base64 32
+BETTER_AUTH_SECRET=cambiar-por-un-secreto-largo

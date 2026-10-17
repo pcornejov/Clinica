@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Color de marca: se cambia por clínica. */
+@theme {
+  --color-marca-50: oklch(0.97 0.02 200);
+  --color-marca-100: oklch(0.93 0.04 200);
+  --color-marca-500: oklch(0.6 0.11 200);
+  --color-marca-600: oklch(0.52 0.1 200);
+  --color-marca-700: oklch(0.45 0.09 200);
+  --color-marca-900: oklch(0.3 0.06 200);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+}
