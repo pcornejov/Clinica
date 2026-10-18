@@ -26,11 +26,13 @@ avisos por correo y WhatsApp.
 | 3 | Pagos: caja (bonos con folio, efectivo, etc.) y Webpay Plus | ✅ |
 | 4 | Avisos por correo (Resend) y WhatsApp (Meta), con botones de confirmar/anular | ✅ |
 | 5 | Ficha clínica: atenciones, CIE-10, firma inmutable, correcciones, adjuntos R2, auditoría | ✅ |
-| 6 | Bot de WhatsApp para agendar conversando | Pendiente |
+| 6 | Bot de WhatsApp: agendar, ver y anular horas conversando (listas y botones) | ✅ en simulado; falta probar con Meta real |
 | 7 | Personalización por clínica: panel Configuración (marca, reglas, módulos) | ✅ |
 
 **Pendientes antes de usarlo con pacientes reales**
 - Publicar: Neon + Cloudflare. Los pasos están en el README.
+- Probar el bot con el WhatsApp real de Meta (hoy solo se probó en modo simulado) y revisar que
+  los mensajes interactivos se vean bien en el celular.
 - Probar Webpay contra el ambiente de integración real de Transbank. Desde el
   servidor de desarrollo original su firewall bloqueaba las peticiones, así que
   solo se probó con el modo `simulado`.
@@ -94,7 +96,7 @@ el código se muestra en pantalla.
 | `npm run db:reset` | Borra todo, migra y carga los datos demo (solo localhost) |
 | `npm run preview:e2e` | Compila y sirve en :4173 para las pruebas e2e |
 | `npm run e2e` | Pruebas de punta a punta (otra terminal con `preview:e2e` corriendo) |
-| `npm run e2e -- fase5` | Una sola suite (`fase1`, `fase2`, `fase34`, `fase5`, `fase7`) |
+| `npm run e2e -- fase5` | Una sola suite (`fase1`, `fase2`, `fase34`, `fase5`, `fase6`, `fase7`) |
 | `npm run deploy` | Publica en Cloudflare |
 
 Las pruebas e2e (`e2e/*.mjs`) usan Playwright (`playwright-core`). La primera
@@ -122,6 +124,8 @@ app/
     fichas.server.ts       Acceso a fichas, historial, atenciones, CIE-10
     pacientes.server.ts    Alta/búsqueda de pacientes, cuentas
     configuracion.server.ts  Cargar y guardar la configuración de la clínica
+    whatsapp/              Bot: `bot.ts` (ids de botones, límites de Meta, nombres; con tests) y
+                           `bot.server.ts` (la conversación, el registro y la limpieza)
   routes/
     publico/               Web pública, agendar, cita (link de gestión), lista de espera
     pago/                  Webpay: ir, retorno, simulador
@@ -221,6 +225,29 @@ e2e/                       Pruebas de punta a punta
     y `0004`). Para corregir se crea una atención nueva con `corrigeA`. Nunca
     borrar.
   - Los adjuntos se validan por sus bytes (`tipoReal`) y su descarga queda auditada.
+
+## Bot de WhatsApp (Fase 6)
+
+- El webhook (`routes/api.whatsapp.ts`) separa dos cosas: los botones de las **plantillas** de
+  recordatorio (`procesarRespuestaWhatsapp`, con token firmado) y todo lo demás, que atiende el bot.
+  Los identificadores del bot empiezan con `bot:`; los de las plantillas, no.
+- **Sin estado en la reserva:** cada botón o fila lleva en su id lo necesario
+  (`bot:hora:<especialidad>:<médico>:<epoch>`). Los ids se leen **solo** con `leerOpcion`, que
+  descarta lo que no calza exactamente. Solo el registro de un número nuevo guarda avance
+  (`conversaciones_whatsapp`, vence a los 30 min).
+- **Seguridad:** la persona se identifica por su celular. Un RUT ya registrado nunca se entrega ni
+  se usa desde otro número. Toda cita se carga con `citaDelPaciente` (una ajena "no existe"), y la
+  hora siempre se revalida con `crearCita`.
+- **Sin duplicados:** `marcarMensajeAtendido` evita contestar dos veces (Meta reintenta). La
+  confirmación y la anulación se responden en el chat y se **omite** el aviso por plantilla
+  equivalente (`omitirAvisoWhatsapp`); el correo sale igual.
+- **Límites de Meta** (`aCarga` los aplica): 3 botones de 20 caracteres; listas de 10 filas, título
+  de 24 y descripción de 72; cuerpo de 1024.
+- Responde solo si `modulos.whatsapp` **y** `modulos.botWhatsapp` están activos (`botActivo`).
+- **Modo simulado:** sin credenciales de WhatsApp, lo que el bot respondería queda en
+  `whatsapp_simulados` (se purga a los 3 días). La suite `fase6` se apoya en eso: envía webhooks
+  firmados con `WHATSAPP_APP_SECRET` (ponlo en `.dev.vars`) y lee las respuestas.
+- Limitaciones: sin dependientes (grupo familiar), sin reagendar y sin pago en línea desde el chat.
 
 ## Trampas conocidas
 

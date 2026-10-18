@@ -102,6 +102,14 @@ Cuando el paciente toca **Confirmar** o **Anular**, el sistema exige tres cosas:
 - que el botón traiga el token firmado de esa cita;
 - que responda el mismo celular registrado del paciente o su tutor.
 
+### Bot de WhatsApp
+El paciente escribe al número de la clínica y el bot le ofrece agendar, ver y anular sus horas
+(menús de botones y listas). Funciona con el mismo webhook (`/api/whatsapp`, campo `messages`) y
+**no necesita plantillas nuevas**: las conversaciones que inicia el paciente se responden con
+mensajes normales durante 24 horas, sin costo. Se activa o desactiva en Panel → Configuración
+(módulo "Bot de WhatsApp"). Con el número de prueba de Meta solo conversan los destinatarios
+verificados.
+
 ### Sin WhatsApp configurado (demo)
 En **Panel → Avisos**, cada recordatorio por WhatsApp tiene botones
 **Simular respuesta del paciente**. Ejecutan exactamente el mismo proceso que

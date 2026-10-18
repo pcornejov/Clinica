@@ -26,6 +26,7 @@ export const CONFIG_POR_DEFECTO: ConfigClinica = {
   modulos: {
     pagoOnline: true,
     whatsapp: true,
+    botWhatsapp: true,
     fichaClinica: true,
   },
 

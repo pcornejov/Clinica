@@ -43,6 +43,13 @@
       "when": 1792266676702,
       "tag": "0005_configuracion_clinica",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792352824822,
+      "tag": "0006_bot_whatsapp",
+      "breakpoints": true
     }
   ]
 }

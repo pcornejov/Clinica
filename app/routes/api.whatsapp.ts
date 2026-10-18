@@ -1,6 +1,8 @@
 import { contextoApp } from "~/lib/contexto";
 import { enviarTextoWhatsapp, firmaMetaValida, secretosAvisos } from "~/modules/avisos/envio.server";
 import { procesarRespuestaWhatsapp } from "~/modules/avisos/respuestas.server";
+import { PREFIJO_BOT } from "~/modules/whatsapp/bot";
+import { atenderMensaje, botActivo, marcarMensajeAtendido } from "~/modules/whatsapp/bot.server";
 import type { Route } from "./+types/api.whatsapp";
 
 /** Verificación del webhook al configurarlo en Meta. */
@@ -15,13 +17,18 @@ export function loader({ request, context }: Route.LoaderArgs) {
 }
 
 type MensajeEntrante = {
+  id?: string;
   from: string;
   type: string;
+  text?: { body?: string };
   button?: { payload?: string };
-  interactive?: { button_reply?: { id?: string } };
+  interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } };
 };
 
-/** Mensajes entrantes: respuestas a los botones del recordatorio. */
+/**
+ * Mensajes entrantes. Los botones de los recordatorios (plantillas) los
+ * procesa `procesarRespuestaWhatsapp`; todo lo demás lo atiende el bot.
+ */
 export async function action({ request, context }: Route.ActionArgs) {
   const app = context.get(contextoApp);
   const cuerpo = await request.text();
@@ -32,10 +39,17 @@ export async function action({ request, context }: Route.ActionArgs) {
   const datos = JSON.parse(cuerpo) as { entry?: { changes?: { value?: { messages?: MensajeEntrante[] } }[] }[] };
   const mensajes = datos.entry?.flatMap((e) => e.changes?.flatMap((c) => c.value?.messages ?? []) ?? []) ?? [];
   for (const m of mensajes) {
-    const payload = m.button?.payload ?? m.interactive?.button_reply?.id;
-    if (!payload) continue; // Mensajes de texto libre: los atiende una persona.
-    const respuesta = await procesarRespuestaWhatsapp(app, { telefono: m.from, payload });
-    await enviarTextoWhatsapp(app.env, `+${m.from}`, respuesta).catch((e) => console.error("No se pudo responder por WhatsApp", e));
+    const opcion = m.interactive?.list_reply?.id ?? m.interactive?.button_reply?.id;
+    const payload = m.button?.payload ?? (opcion && !opcion.startsWith(PREFIJO_BOT) ? opcion : undefined);
+    if (payload) {
+      const respuesta = await procesarRespuestaWhatsapp(app, { telefono: m.from, payload });
+      await enviarTextoWhatsapp(app.env, `+${m.from}`, respuesta).catch((e) => console.error("No se pudo responder por WhatsApp", e));
+      continue;
+    }
+    if (!botActivo()) continue;
+    // Meta reintenta los webhooks: cada mensaje se atiende una sola vez.
+    if (m.id && !(await marcarMensajeAtendido(app.db, m.id))) continue;
+    await atenderMensaje(app, { telefono: m.from, texto: m.text?.body, opcion });
   }
   // Meta reintenta si no recibe 200 rápido.
   return new Response("ok", { status: 200 });

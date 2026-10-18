@@ -89,6 +89,11 @@ export function enviarPlantillaWhatsapp(env: Env, para: string, mensaje: Mensaje
   });
 }
 
+/** Mensaje ya armado (texto o interactivo), dentro de la ventana de 24 h de una conversación. */
+export function enviarCargaWhatsapp(env: Env, para: string, carga: Record<string, unknown>): Promise<ResultadoEnvio> {
+  return llamarWhatsapp(env, { to: numeroWhatsapp(para), ...carga });
+}
+
 /** Texto libre: solo permitido dentro de las 24 h siguientes a un mensaje del paciente. */
 export function enviarTextoWhatsapp(env: Env, para: string, texto: string): Promise<ResultadoEnvio> {
   return llamarWhatsapp(env, { to: numeroWhatsapp(para), type: "text", text: { body: texto } });

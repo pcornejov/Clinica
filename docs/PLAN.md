@@ -46,6 +46,25 @@ archivos queda para cuando R2 esté habilitado); solo **administración** puede 
 - Cada instancia del Worker relee la configuración como máximo cada 30 s, y quien guarda la ve
   al instante.
 
+## Bot de WhatsApp (Fase 6)
+
+Decisiones: el paciente puede **agendar, ver y anular** sus horas conversando; se identifica
+**por su celular** (si el número es nuevo, el bot pide RUT, nombre, apellidos y la aceptación de
+avisos); la hora se elige **por especialidad, día y hora** con listas de WhatsApp. Solo pago en la
+clínica.
+
+- **Sin estado en la reserva:** cada botón o fila de lista lleva en su identificador lo necesario
+  (`bot:hora:<especialidad>:<médico>:<epoch>`), así que el servidor no guarda el avance. Solo el
+  registro de un número nuevo usa una tabla (`conversaciones_whatsapp`, vence a los 30 min).
+- **Mismas reglas que la web:** la hora se revalida en el servidor (`crearCita`), no hay doble
+  agendamiento, un RUT ya registrado con otro número **nunca** se entrega ni se modifica, y cada
+  acción sobre una cita exige que sea del paciente identificado por ese celular.
+- **Sin duplicar mensajes:** la confirmación y la anulación se responden en el chat; el aviso de
+  WhatsApp por plantilla de esas acciones se omite y el correo se envía igual.
+- Meta reintenta los webhooks: cada mensaje se procesa una sola vez (`mensajes_whatsapp`).
+- Módulo activable en Configuración (`botWhatsapp`). Limitaciones de esta versión: sin
+  dependientes (grupo familiar), sin reagendar y sin pago en línea desde el chat.
+
 ## Módulos
 
 | Módulo | Usuarios | Funciones |
@@ -181,7 +200,7 @@ contacto no coincide con el registrado, la cita se marca con
 | 3. Pagos | Cobro en caja (bono Fonasa/Isapre con folio, efectivo, tarjeta, transferencia, convenio), caja del día, Webpay Plus (integración, producción o simulado) con reserva temporal de 15 min, retorno idempotente, devolución según regla de 24 h | ✅ Lista |
 | 4. Notificaciones | Confirmación, recordatorio 24 h, cambio, anulación y hora liberada por correo (Resend) y WhatsApp (Meta), con botones Confirmar/Anular; cola con reintentos sin duplicados; panel de avisos; modo simulado sin credenciales | ✅ Lista · ⭐ demo comercial mínima |
 | 5. Ficha clínica | Agenda del médico con alergias a la vista, ficha con antecedentes, historial de toda la clínica, atención con signos vitales, IMC y diagnósticos CIE-10, borrador → firma (inmutable) → corrección vinculada, indicaciones imprimibles, exámenes en R2, acceso solo de médicos tratantes o acceso excepcional con motivo, auditoría de accesos | ✅ Lista · ⭐ demo completa |
-| 6. Bot de WhatsApp | Agendamiento por conversación | Pendiente |
+| 6. Bot de WhatsApp | Agendar, ver y anular horas conversando (menús de botones y listas), registro de números nuevos, módulo activable | ✅ Lista (probada en modo simulado; falta probarla con el número de Meta) |
 | 7. Personalización | Panel **Configuración** (solo admin): datos de contacto, eslogan, logo por URL, color de marca (tono), reglas de agenda (anticipación, días visibles, devolución, reserva de pago, recordatorio) y módulos (pago en línea, WhatsApp, ficha clínica). Se guarda en la base y se aplica de inmediato; cada cambio queda en la auditoría | ✅ Lista |
 
 ### Guion de la demo

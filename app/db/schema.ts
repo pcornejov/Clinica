@@ -550,6 +550,35 @@ export const auditoria = pgTable(
   ],
 );
 
+// ─── Bot de WhatsApp ────────────────────────────────────────────────────────
+
+/** Avance de un número nuevo que se está registrando por WhatsApp (vence a los 30 minutos). */
+export const conversacionesWhatsapp = pgTable("conversaciones_whatsapp", {
+  /** Teléfono en E.164, ej. "+56912345678". */
+  telefono: text("telefono").primaryKey(),
+  paso: text("paso").notNull(),
+  datos: jsonb("datos").$type<{ rut?: string; nombres?: string; apellidos?: string }>().notNull().default({}),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Mensajes entrantes ya atendidos: Meta reintenta los webhooks y no hay que contestar dos veces. */
+export const mensajesWhatsapp = pgTable("mensajes_whatsapp", {
+  id: text("id").primaryKey(),
+  creadoEn: creadoEn(),
+});
+
+/** Lo que el bot habría enviado cuando WhatsApp no está configurado (modo simulado). Se purga a los 3 días. */
+export const whatsappSimulados = pgTable(
+  "whatsapp_simulados",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    telefono: text("telefono").notNull(),
+    contenido: jsonb("contenido").notNull(),
+    creadoEn: creadoEn(),
+  },
+  (t) => [index("whatsapp_simulados_telefono_idx").on(t.telefono, t.id)],
+);
+
 // ─── Configuración ──────────────────────────────────────────────────────────
 
 /** Configuración editable de la clínica (una sola fila). Ver app/config/esquema.ts. */

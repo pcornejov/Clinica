@@ -96,6 +96,8 @@ try {
     "si el pago llega después de liberada la hora, se devuelve automáticamente");
 
   // ── 5. Anular con más de 24 h: devolución ───────────────────────────────
+  // La primera hora disponible puede quedar a menos de 24 h según cuándo se corra la prueba: se deja a 60 días.
+  sql(`update citas set inicio = now() + interval '60 days', fin = now() + interval '60 days 30 minutes' where id='${c1}'`);
   await p.goto(urlCita1);
   await p.click("summary:has-text('Anular hora')");
   ok((await p.locator("text=el pago no se devuelve").count()) === 0, "con más de 24 h de anticipación no advierte pérdida del pago");

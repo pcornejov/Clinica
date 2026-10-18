@@ -14,7 +14,7 @@ describe("aplicarConfig", () => {
     expect(clinica.nombre).toBe("Clínica Norte");
     expect(clinica.reglas.diasAgendaVisible).toBe(45);
     expect(clinica.reglas.reservaPagoMinutos).toBe(15);
-    expect(clinica.modulos).toEqual({ pagoOnline: true, whatsapp: false, fichaClinica: true });
+    expect(clinica.modulos).toEqual({ pagoOnline: true, whatsapp: false, botWhatsapp: true, fichaClinica: true });
   });
 
   it("mantiene la misma referencia, porque otros módulos la importan", () => {

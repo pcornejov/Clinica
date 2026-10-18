@@ -4,6 +4,7 @@ import { crearAuth } from "../app/lib/auth.server";
 import { contextoApp, type ContextoApp } from "../app/lib/contexto";
 import { procesarCola } from "../app/modules/avisos/cola.server";
 import { cargarConfig } from "../app/modules/configuracion.server";
+import { limpiarBotWhatsapp } from "../app/modules/whatsapp/bot.server";
 import { liberarReservasVencidas } from "../app/modules/pagos.server";
 
 const requestHandler = createRequestHandler(
@@ -33,6 +34,7 @@ export default {
     const tarea = (async () => {
       try {
         await cargarConfig(db, true);
+        await limpiarBotWhatsapp(db);
         const liberadas = await liberarReservasVencidas(db);
         const avisos = await procesarCola(db, env);
         console.log(`cron ${controller.cron}: ${liberadas} reservas liberadas, avisos`, avisos);

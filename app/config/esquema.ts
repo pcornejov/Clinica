@@ -35,6 +35,8 @@ export const esquemaReglas = z.object({
 export const esquemaModulos = z.object({
   pagoOnline: z.boolean(),
   whatsapp: z.boolean(),
+  /** El paciente agenda, ve y anula sus horas conversando por WhatsApp. */
+  botWhatsapp: z.boolean(),
   fichaClinica: z.boolean(),
 });
 

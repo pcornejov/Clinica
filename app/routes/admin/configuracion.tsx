@@ -21,7 +21,7 @@ export function loader() {
   return { config: structuredClone(clinica) };
 }
 
-const esquemaModulos = z.object({ pagoOnline: casilla, whatsapp: casilla, fichaClinica: casilla });
+const esquemaModulos = z.object({ pagoOnline: casilla, whatsapp: casilla, botWhatsapp: casilla, fichaClinica: casilla });
 
 export async function action({ request, context }: Route.ActionArgs) {
   const { db } = context.get(contextoApp);
@@ -192,6 +192,11 @@ export default function Configuracion({ loaderData, actionData }: Route.Componen
             <div className="space-y-3">
               <Casilla etiqueta="Pago en línea (Webpay): el paciente puede pagar al reservar" name="pagoOnline" defaultChecked={c.modulos.pagoOnline} />
               <Casilla etiqueta="WhatsApp: avisos y botones de confirmación por WhatsApp" name="whatsapp" defaultChecked={c.modulos.whatsapp} />
+              <Casilla
+                etiqueta="Bot de WhatsApp: el paciente agenda, ve y anula sus horas conversando (requiere WhatsApp)"
+                name="botWhatsapp"
+                defaultChecked={c.modulos.botWhatsapp}
+              />
               <Casilla etiqueta="Ficha clínica: portal médico con fichas y atenciones" name="fichaClinica" defaultChecked={c.modulos.fichaClinica} />
             </div>
             <p className="text-xs text-slate-400">
